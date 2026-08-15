@@ -218,6 +218,101 @@ export function ProfileModal({ isOpen, onClose }) {
               />
             </div>
 
+            {/* Custom Targets Override */}
+            <div style={{
+              marginTop: '4px',
+              padding: '14px',
+              background: 'linear-gradient(135deg, rgba(251, 191, 36, 0.08) 0%, rgba(245, 158, 11, 0.08) 100%)',
+              border: '1px solid rgba(251, 191, 36, 0.2)',
+              borderRadius: 'var(--radius-lg)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '10px' }}>
+                <Flame size={14} color="#f59e0b" />
+                <span style={{ fontSize: '12.5px', fontWeight: 700, color: '#fbbf24' }}>Custom Daily Targets (Override)</span>
+              </div>
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '10px', lineHeight: 1.4 }}>
+                Leave blank to use auto-calculated values from your profile & goal. Set a value to override.
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
+                <div>
+                  <label style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                    Calories (kcal)
+                  </label>
+                  <input
+                    type="number"
+                    className="app-input"
+                    placeholder={`Auto: ${targets.targetCalories}`}
+                    value={formData.customCalories || ''}
+                    onChange={(e) => handleChange('customCalories', e.target.value ? Number(e.target.value) : null)}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                    Protein (g)
+                  </label>
+                  <input
+                    type="number"
+                    className="app-input"
+                    placeholder={`Auto: ${targets.proteinGrams}g`}
+                    value={formData.customProtein || ''}
+                    onChange={(e) => handleChange('customProtein', e.target.value ? Number(e.target.value) : null)}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                    Carbs (g)
+                  </label>
+                  <input
+                    type="number"
+                    className="app-input"
+                    placeholder={`Auto: ${targets.carbGrams}g`}
+                    value={formData.customCarbs || ''}
+                    onChange={(e) => handleChange('customCarbs', e.target.value ? Number(e.target.value) : null)}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                    Fat (g)
+                  </label>
+                  <input
+                    type="number"
+                    className="app-input"
+                    placeholder={`Auto: ${targets.fatGrams}g`}
+                    value={formData.customFat || ''}
+                    onChange={(e) => handleChange('customFat', e.target.value ? Number(e.target.value) : null)}
+                  />
+                </div>
+              </div>
+
+              {(formData.customCalories || formData.customProtein || formData.customCarbs || formData.customFat) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleChange('customCalories', null);
+                    handleChange('customProtein', null);
+                    handleChange('customCarbs', null);
+                    handleChange('customFat', null);
+                    setFormData(prev => ({ ...prev, customCalories: null, customProtein: null, customCarbs: null, customFat: null }));
+                  }}
+                  style={{
+                    marginTop: '8px',
+                    width: '100%',
+                    padding: '6px',
+                    fontSize: '11px',
+                    fontWeight: 600,
+                    color: '#f59e0b',
+                    background: 'rgba(251, 191, 36, 0.1)',
+                    border: '1px solid rgba(251, 191, 36, 0.25)',
+                    borderRadius: '8px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  Reset to Auto-Calculated Values
+                </button>
+              )}
+            </div>
+
             <button type="submit" className="btn-primary" style={{ marginTop: '8px' }}>
               <Save size={16} /> Save Profile & Targets
             </button>
