@@ -34,15 +34,10 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Install Android 35 Platform & Build-Tools
+      - name: Install Android SDK Components
         run: |
           yes | sdkmanager --licenses || true
-          sdkmanager "platforms;android-35" "build-tools;35.0.0"
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          build-root-directory: ./android
+          sdkmanager "platforms;android-36" "build-tools;36.0.0"
 
       - name: Sync Capacitor Android
         run: npx cap sync android
