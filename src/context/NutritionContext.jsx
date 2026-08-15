@@ -1,0 +1,396 @@
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { calculateTargets, GOAL_TYPES } from '../utils/nutritionCalculations';
+import { formatDateKey } from '../utils/formatters';
+
+const NutritionContext = createContext(null);
+
+const DEFAULT_PROFILE = {
+  name: 'Alex Hunter',
+  gender: 'male',
+  ageYears: 27,
+  weightKg: 78.5,
+  targetWeightKg: 73.0,
+  heightCm: 178,
+  activityLevel: 'moderate',
+  goal: 'loss_moderate', // 'loss_mild', 'loss_moderate', 'loss_aggressive', 'gain_lean', 'gain_growth', 'recomp', 'maintenance'
+  waterGoalMl: 2500,
+  customCalories: null,
+  customProtein: null,
+  customCarbs: null,
+  customFat: null,
+  unitSystem: 'metric' // 'metric' (kg/cm) or 'imperial' (lbs/in)
+};
+
+// Seed realistic sample day meal data
+const getInitialMeals = () => {
+  const today = formatDateKey(new Date());
+  const yesterdayDate = new Date();
+  yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+  const yesterday = formatDateKey(yesterdayDate);
+
+  return {
+    [today]: [
+      {
+        id: 'meal_sample_1',
+        name: 'Avocado Toast with Poached Eggs & Chia',
+        mealType: 'breakfast',
+        calories: 460,
+        protein: 22,
+        carbs: 38,
+        fat: 24,
+        fiber: 8,
+        sugar: 2,
+        sodiumMg: 490,
+        timestamp: Date.now() - 1000 * 60 * 60 * 4,
+        imageUrl: 'https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&w=800&q=80',
+        tags: ['High Fiber', 'Healthy Fats', 'Whole Foods'],
+        coachInsight: 'Great nutrient density. The healthy fats slow gastric emptying to keep you full for 4+ hours on your cut.',
+        items: [
+          { name: 'Sourdough Bread (Toasted)', portionGrams: 80, calories: 180, protein: 6, carbs: 34, fat: 1.5, fiber: 2 },
+          { name: 'Poached Eggs (2 large)', portionGrams: 100, calories: 140, protein: 12, carbs: 1, fat: 10, fiber: 0 },
+          { name: 'Fresh Hass Avocado', portionGrams: 70, calories: 115, protein: 1.5, carbs: 6, fat: 10.5, fiber: 5 },
+          { name: 'Chia Seeds & Microgreens', portionGrams: 15, calories: 25, protein: 1, carbs: 1, fat: 2, fiber: 1 }
+        ]
+      },
+      {
+        id: 'meal_sample_2',
+        name: 'Herb Grilled Chicken Breast, Brown Rice & Broccoli',
+        mealType: 'lunch',
+        calories: 510,
+        protein: 52,
+        carbs: 54,
+        fat: 9,
+        fiber: 7,
+        sugar: 3,
+        sodiumMg: 410,
+        timestamp: Date.now() - 1000 * 60 * 60 * 1,
+        imageUrl: 'https://images.unsplash.com/photo-1532550907401-a500c9a57435?auto=format&fit=crop&w=800&q=80',
+        tags: ['Ultra High Protein', 'Lean Fuel', 'Bodybuilder Classic'],
+        coachInsight: 'Phenomenal cutting plate! Over 50g of lean protein with minimal fats gives you maximum satiety per calorie.',
+        items: [
+          { name: 'Marinated Grilled Chicken Breast', portionGrams: 200, calories: 280, protein: 44, carbs: 0, fat: 5.5, fiber: 0 },
+          { name: 'Steamed Long-Grain Brown Rice', portionGrams: 140, calories: 160, protein: 3.5, carbs: 34, fat: 1.5, fiber: 2.5 },
+          { name: 'Garlic Steamed Broccoli Florets', portionGrams: 120, calories: 45, protein: 3.5, carbs: 8, fat: 0.5, fiber: 4 },
+          { name: 'Extra Virgin Olive Oil (Drizzle)', portionGrams: 5, calories: 45, protein: 0, carbs: 0, fat: 5, fiber: 0 }
+        ]
+      }
+    ],
+    [yesterday]: [
+      {
+        id: 'meal_sample_y1',
+        name: 'Greek Yogurt & Mixed Berries Power Bowl',
+        mealType: 'breakfast',
+        calories: 380,
+        protein: 32,
+        carbs: 42,
+        fat: 7,
+        fiber: 9,
+        timestamp: Date.now() - 1000 * 60 * 60 * 28,
+        imageUrl: 'https://images.unsplash.com/photo-1590080875515-8a3a8dc5735e?auto=format&fit=crop&w=800&q=80',
+        tags: ['High Protein', 'Antioxidant Superfood'],
+        coachInsight: 'Great high-protein start with prebiotic fiber.',
+        items: [
+          { name: 'Greek Yogurt (0% Fat)', portionGrams: 200, calories: 120, protein: 22, carbs: 7, fat: 0, fiber: 0 },
+          { name: 'Whey Protein Scoop', portionGrams: 15, calories: 60, protein: 10, carbs: 1, fat: 0.5, fiber: 0 },
+          { name: 'Fresh Berries & Granola', portionGrams: 100, calories: 200, protein: 4, carbs: 34, fat: 6.5, fiber: 9 }
+        ]
+      },
+      {
+        id: 'meal_sample_y2',
+        name: 'Wild Salmon, Quinoa & Avocado Greens',
+        mealType: 'dinner',
+        calories: 590,
+        protein: 45,
+        carbs: 46,
+        fat: 23,
+        fiber: 9,
+        timestamp: Date.now() - 1000 * 60 * 60 * 20,
+        imageUrl: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80',
+        tags: ['Omega-3 Rich', 'High Protein'],
+        coachInsight: 'Exceptional recovery meal packed with anti-inflammatory omega-3 fats.',
+        items: [
+          { name: 'Grilled Wild Salmon', portionGrams: 170, calories: 300, protein: 36, carbs: 0, fat: 17, fiber: 0 },
+          { name: 'Steamed Quinoa', portionGrams: 120, calories: 150, protein: 5, carbs: 28, fat: 2.5, fiber: 3 },
+          { name: 'Avocado & Greens Salad', portionGrams: 120, calories: 140, protein: 4, carbs: 18, fat: 3.5, fiber: 6 }
+        ]
+      }
+    ]
+  };
+};
+
+const getInitialWeightLogs = () => {
+  const logs = [];
+  const startWeight = 79.8;
+  for (let i = 14; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    // realistic downward trend with natural daily water fluctuation
+    const naturalFluctuation = (Math.sin(i * 1.5) * 0.35);
+    const weight = parseFloat((startWeight - (14 - i) * 0.09 + naturalFluctuation).toFixed(2));
+    logs.push({
+      date: formatDateKey(d),
+      weight,
+      note: i === 0 ? 'Morning weigh-in (fasted)' : ''
+    });
+  }
+  return logs;
+};
+
+export function NutritionProvider({ children }) {
+  const [profile, setProfile] = useState(() => {
+    const saved = localStorage.getItem('nutrivision_profile');
+    return saved ? JSON.parse(saved) : DEFAULT_PROFILE;
+  });
+
+  const [selectedDate, setSelectedDate] = useState(() => formatDateKey(new Date()));
+
+  const [meals, setMeals] = useState(() => {
+    const saved = localStorage.getItem('nutrivision_meals');
+    return saved ? JSON.parse(saved) : getInitialMeals();
+  });
+
+  const [waterLogs, setWaterLogs] = useState(() => {
+    const saved = localStorage.getItem('nutrivision_water');
+    return saved ? JSON.parse(saved) : { [formatDateKey(new Date())]: 1500 };
+  });
+
+  const [weightLogs, setWeightLogs] = useState(() => {
+    const saved = localStorage.getItem('nutrivision_weights');
+    return saved ? JSON.parse(saved) : getInitialWeightLogs();
+  });
+
+  const [apiKey, setApiKey] = useState(() => {
+    return localStorage.getItem('nutrivision_gemini_key') || import.meta.env.VITE_GEMINI_API_KEY || '';
+  });
+
+  const [fastingState, setFastingState] = useState(() => {
+    const saved = localStorage.getItem('nutrivision_fasting');
+    return saved ? JSON.parse(saved) : { isFasting: true, startTime: Date.now() - 1000 * 60 * 60 * 14, targetHours: 16 };
+  });
+
+  // Sync to local storage
+  useEffect(() => {
+    localStorage.setItem('nutrivision_profile', JSON.stringify(profile));
+  }, [profile]);
+
+  useEffect(() => {
+    localStorage.setItem('nutrivision_meals', JSON.stringify(meals));
+  }, [meals]);
+
+  useEffect(() => {
+    localStorage.setItem('nutrivision_water', JSON.stringify(waterLogs));
+  }, [waterLogs]);
+
+  useEffect(() => {
+    localStorage.setItem('nutrivision_weights', JSON.stringify(weightLogs));
+  }, [weightLogs]);
+
+  useEffect(() => {
+    localStorage.setItem('nutrivision_gemini_key', apiKey);
+  }, [apiKey]);
+
+  useEffect(() => {
+    localStorage.setItem('nutrivision_fasting', JSON.stringify(fastingState));
+  }, [fastingState]);
+
+  // Derived Daily Targets based on Profile & Goals
+  const targets = React.useMemo(() => {
+    const calculated = calculateTargets(profile);
+    return {
+      ...calculated,
+      targetCalories: profile.customCalories || calculated.targetCalories,
+      proteinGrams: profile.customProtein || calculated.proteinGrams,
+      carbGrams: profile.customCarbs || calculated.carbGrams,
+      fatGrams: profile.customFat || calculated.fatGrams,
+      waterGoalMl: profile.waterGoalMl || 2500
+    };
+  }, [profile]);
+
+  // Day calculations
+  const getDaySummary = (dateKey = selectedDate) => {
+    const dayMeals = meals[dateKey] || [];
+    const totals = dayMeals.reduce((acc, meal) => {
+      acc.calories += meal.calories || 0;
+      acc.protein += meal.protein || 0;
+      acc.carbs += meal.carbs || 0;
+      acc.fat += meal.fat || 0;
+      acc.fiber += meal.fiber || 0;
+      return acc;
+    }, { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 });
+
+    const remainingCalories = targets.targetCalories - totals.calories;
+    const remainingProtein = Math.max(0, targets.proteinGrams - totals.protein);
+    const remainingCarbs = Math.max(0, targets.carbGrams - totals.carbs);
+    const remainingFat = Math.max(0, targets.fatGrams - totals.fat);
+
+    const water = waterLogs[dateKey] || 0;
+
+    return {
+      dateKey,
+      meals: dayMeals,
+      totals,
+      remainingCalories,
+      remainingProtein,
+      remainingCarbs,
+      remainingFat,
+      water,
+      caloriesPercent: Math.min(100, Math.round((totals.calories / targets.targetCalories) * 100)) || 0,
+      proteinPercent: Math.min(100, Math.round((totals.protein / targets.proteinGrams) * 100)) || 0,
+      carbsPercent: Math.min(100, Math.round((totals.carbs / targets.carbGrams) * 100)) || 0,
+      fatPercent: Math.min(100, Math.round((totals.fat / targets.fatGrams) * 100)) || 0,
+      waterPercent: Math.min(100, Math.round((water / targets.waterGoalMl) * 100)) || 0
+    };
+  };
+
+  // Actions
+  const addMeal = (dateKey, mealData) => {
+    const newMeal = {
+      ...mealData,
+      id: 'meal_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+      timestamp: mealData.timestamp || Date.now()
+    };
+
+    setMeals(prev => {
+      const currentList = prev[dateKey] || [];
+      return {
+        ...prev,
+        [dateKey]: [...currentList, newMeal]
+      };
+    });
+    return newMeal;
+  };
+
+  const updateMeal = (dateKey, mealId, updatedData) => {
+    setMeals(prev => {
+      const currentList = prev[dateKey] || [];
+      return {
+        ...prev,
+        [dateKey]: currentList.map(m => m.id === mealId ? { ...m, ...updatedData } : m)
+      };
+    });
+  };
+
+  const deleteMeal = (dateKey, mealId) => {
+    setMeals(prev => {
+      const currentList = prev[dateKey] || [];
+      return {
+        ...prev,
+        [dateKey]: currentList.filter(m => m.id !== mealId)
+      };
+    });
+  };
+
+  const logWater = (dateKey, amountDelta) => {
+    setWaterLogs(prev => {
+      const current = prev[dateKey] || 0;
+      const updated = Math.max(0, current + amountDelta);
+      return {
+        ...prev,
+        [dateKey]: updated
+      };
+    });
+  };
+
+  const resetWater = (dateKey) => {
+    setWaterLogs(prev => ({
+      ...prev,
+      [dateKey]: 0
+    }));
+  };
+
+  const logWeight = (weight, dateKey = selectedDate, note = '') => {
+    const parsed = parseFloat(weight);
+    if (!parsed) return;
+
+    setWeightLogs(prev => {
+      const filtered = prev.filter(entry => entry.date !== dateKey);
+      const updated = [...filtered, { date: dateKey, weight: parsed, note }];
+      return updated.sort((a, b) => new Date(a.date) - new Date(b.date));
+    });
+
+    // Also update profile current weight
+    setProfile(prev => ({ ...prev, weightKg: parsed }));
+  };
+
+  const deleteWeight = (dateKey) => {
+    setWeightLogs(prev => prev.filter(entry => entry.date !== dateKey));
+  };
+
+  const updateProfile = (fields) => {
+    setProfile(prev => ({ ...prev, ...fields }));
+  };
+
+  const toggleFasting = (targetHours = 16) => {
+    setFastingState(prev => {
+      if (prev.isFasting) {
+        return { isFasting: false, startTime: null, targetHours };
+      } else {
+        return { isFasting: true, startTime: Date.now(), targetHours };
+      }
+    });
+  };
+
+  const exportDataJSON = () => {
+    const data = {
+      profile,
+      meals,
+      waterLogs,
+      weightLogs,
+      exportedAt: new Date().toISOString()
+    };
+    return JSON.stringify(data, null, 2);
+  };
+
+  const importDataJSON = (jsonStr) => {
+    try {
+      const parsed = JSON.parse(jsonStr);
+      if (parsed.profile) setProfile(parsed.profile);
+      if (parsed.meals) setMeals(parsed.meals);
+      if (parsed.waterLogs) setWaterLogs(parsed.waterLogs);
+      if (parsed.weightLogs) setWeightLogs(parsed.weightLogs);
+      return { success: true };
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
+  };
+
+  return (
+    <NutritionContext.Provider
+      value={{
+        profile,
+        targets,
+        selectedDate,
+        setSelectedDate,
+        meals,
+        waterLogs,
+        weightLogs,
+        apiKey,
+        setApiKey,
+        fastingState,
+        setFastingState,
+        toggleFasting,
+        getDaySummary,
+        addMeal,
+        updateMeal,
+        deleteMeal,
+        logWater,
+        resetWater,
+        logWeight,
+        deleteWeight,
+        updateProfile,
+        exportDataJSON,
+        importDataJSON
+      }}
+    >
+      {children}
+    </NutritionContext.Provider>
+  );
+}
+
+export function useNutrition() {
+  const context = useContext(NutritionContext);
+  if (!context) {
+    throw new Error('useNutrition must be used within a NutritionProvider');
+  }
+  return context;
+}
