@@ -30,7 +30,7 @@ export function ApiKeyModal({ isOpen, onClose }) {
 
     try {
       // Test with lightweight prompt
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${inputKey.trim()}`;
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${inputKey.trim()}`;
       const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
