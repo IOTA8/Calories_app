@@ -1,6 +1,6 @@
 /**
  * Google Gemini Multimodal Vision API Client
- * Uses gemini-1.5-flash or gemini-1.5-pro to analyze food images and extract detailed nutrition.
+ * Uses gemini-2.0-flash to analyze food images and extract detailed nutrition.
  */
 
 export async function analyzeFoodWithGemini({ imageBase64, mimeType = 'image/jpeg', apiKey, userGoal = 'loss_moderate', customNotes = '' }) {
@@ -71,7 +71,7 @@ Important:
 - Provide realistic estimates based on standard culinary serving sizes.
 - Respond with pure JSON only, without markdown code fences or backticks.`;
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
   const requestBody = {
     contents: [
