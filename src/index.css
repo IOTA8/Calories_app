@@ -86,7 +86,8 @@ html, body {
 .mobile-device-shell {
   width: 100%;
   max-width: 480px;
-  min-height: 100vh;
+  height: 100vh;
+  height: 100dvh;
   background-color: var(--bg-app);
   display: flex;
   flex-direction: column;
@@ -96,7 +97,7 @@ html, body {
 
 @media (min-width: 600px) {
   .mobile-device-shell {
-    min-height: calc(100vh - 48px);
+    height: calc(100vh - 48px);
     max-height: 920px;
     border-radius: 36px;
     border: 1px solid var(--border-subtle);
@@ -106,10 +107,11 @@ html, body {
 
 /* Scrollable Screen Content */
 .screen-scroll-container {
-  flex: 1;
+  flex: 1 1 0%;
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 16px 16px 110px 16px;
+  padding: 16px 16px 24px 16px;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
 }
@@ -313,12 +315,9 @@ html, body {
 
 /* Floating Bottom Navigation Bar */
 .bottom-nav-container {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  flex-shrink: 0;
   padding: 8px 16px calc(var(--safe-bottom) + 6px) 16px;
-  background: linear-gradient(to top, rgba(9, 13, 22, 0.98) 70%, rgba(9, 13, 22, 0) 100%);
+  background: rgba(9, 13, 22, 0.98);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   z-index: 50;

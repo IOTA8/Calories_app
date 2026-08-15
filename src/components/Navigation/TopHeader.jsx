@@ -39,8 +39,7 @@ export function TopHeader({ onOpenProfile, onOpenApiKey, onOpenInstall }) {
       gap: '12px',
       background: 'rgba(9, 13, 22, 0.95)',
       borderBottom: '1px solid var(--border-subtle)',
-      position: 'sticky',
-      top: 0,
+      flexShrink: 0,
       zIndex: 40,
       backdropFilter: 'blur(12px)'
     }}>
