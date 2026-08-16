@@ -4,6 +4,8 @@ import { TopHeader } from './components/Navigation/TopHeader';
 import { BottomNav } from './components/Navigation/BottomNav';
 import { CalorieRing } from './components/Dashboard/CalorieRing';
 import { MacroBars } from './components/Dashboard/MacroBars';
+import { QuickWidgetsRow } from './components/Dashboard/QuickWidgetsRow';
+import { QuickMealsGrid } from './components/Dashboard/QuickMealsGrid';
 import { GoalCoachBanner } from './components/Dashboard/GoalCoachBanner';
 import { MealSection } from './components/Dashboard/MealSection';
 import { WaterTracker } from './components/Dashboard/WaterTracker';
@@ -140,20 +142,20 @@ function MainApp() {
         {/* Scrollable Tab Content */}
         <main className="screen-scroll-container">
           {activeTab === 'today' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              {/* Goal-Driven Calorie Ring */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              {/* Calorie Ring Hero Card with 3 Integrated Macro Progress Bars */}
               <CalorieRing summary={summary} targets={targets} />
 
-              {/* Macro Bars */}
-              <MacroBars summary={summary} targets={targets} />
+              {/* Side-by-side Workout Burned & Water Widgets */}
+              <QuickWidgetsRow summary={summary} />
+
+              {/* Meals Quick Category Row (Breakfast, Lunch, Dinner, Snacks) */}
+              <QuickMealsGrid onSelectMealType={handleOpenManualAdd} />
 
               {/* Contextual AI Coach Banner */}
               <GoalCoachBanner summary={summary} targets={targets} />
 
-              {/* Water Hydration Tracker */}
-              <WaterTracker summary={summary} />
-
-              {/* Breakfast, Lunch, Dinner, Snacks Sections */}
+              {/* Today's Meals Grouped Log */}
               <MealSection
                 meals={summary.meals}
                 onAddMeal={handleOpenManualAdd}

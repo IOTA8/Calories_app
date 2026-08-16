@@ -1,10 +1,10 @@
 import React from 'react';
-import { ChevronLeft, ChevronRight, Sparkles, User, Key, Flame, Smartphone } from 'lucide-react';
+import { ChevronLeft, ChevronRight, User, Key, Flame, Smartphone, Sparkles } from 'lucide-react';
 import { useNutrition } from '../../context/NutritionContext';
 import { formatDisplayDate, formatDateKey } from '../../utils/formatters';
 
 export function TopHeader({ onOpenProfile, onOpenApiKey, onOpenInstall }) {
-  const { selectedDate, setSelectedDate, profile, targets, apiKey } = useNutrition();
+  const { selectedDate, setSelectedDate, targets, apiKey } = useNutrition();
 
   const handlePrevDay = () => {
     const [y, m, d] = selectedDate.split('-').map(Number);
@@ -20,196 +20,133 @@ export function TopHeader({ onOpenProfile, onOpenApiKey, onOpenInstall }) {
 
   const isToday = selectedDate === formatDateKey(new Date());
 
-  const getGoalBadge = () => {
-    const goal = targets?.goalConfig;
-    if (!goal) return { text: 'Tracker', class: 'badge-emerald' };
-    if (goal.category === 'loss') return { text: `${goal.label} (${goal.deficitKcal} kcal)`, class: 'badge-emerald' };
-    if (goal.category === 'gain') return { text: `${goal.label} (+${goal.deficitKcal} kcal)`, class: 'badge-amber' };
-    if (goal.category === 'recomp') return { text: 'Recomposition', class: 'badge-sky' };
-    return { text: 'Maintenance', class: 'badge-purple' };
-  };
-
-  const goalBadge = getGoalBadge();
-  const calorieTarget = targets?.targetCalories ? Math.round(targets.targetCalories) : null;
-
   return (
     <header style={{
-      padding: '14px 16px 10px 16px',
+      padding: '12px 18px 10px 18px',
       display: 'flex',
       flexDirection: 'column',
-      gap: '10px',
-      background: 'rgba(9, 13, 22, 0.95)',
+      gap: '8px',
+      background: 'rgba(8, 11, 17, 0.95)',
       borderBottom: '1px solid var(--border-subtle)',
       flexShrink: 0,
       zIndex: 40,
-      backdropFilter: 'blur(12px)'
+      backdropFilter: 'blur(20px)'
     }}>
-      {/* Top row: App Name & Actions */}
+      {/* Top Row: App Brand & Quick Settings */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <div style={{
-            width: '32px',
-            height: '32px',
-            borderRadius: '10px',
-            background: 'linear-gradient(135deg, #10b981 0%, #06b6d4 100%)',
+            width: '30px',
+            height: '30px',
+            borderRadius: '9px',
+            background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            boxShadow: '0 2px 10px rgba(16, 185, 129, 0.35)'
+            boxShadow: '0 2px 10px rgba(99, 102, 241, 0.45)'
           }}>
-            <Flame size={18} color="#fff" />
+            <Flame size={16} color="#fff" />
           </div>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span style={{ fontWeight: 800, fontSize: '17px', letterSpacing: '-0.3px' }}>NutriVision</span>
-              <span style={{
-                fontSize: '10px',
-                fontWeight: 700,
-                padding: '2px 6px',
-                borderRadius: '6px',
-                background: 'rgba(56, 189, 248, 0.15)',
-                color: '#38bdf8',
-                border: '1px solid rgba(56, 189, 248, 0.3)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '3px'
-              }}>
-                <Sparkles size={10} /> AI
-              </span>
-            </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <span style={{ fontWeight: 800, fontSize: '16px', color: '#ffffff', letterSpacing: '-0.3px' }}>
+              NutriVision
+            </span>
           </div>
         </div>
 
-        {/* Right buttons: Install App + API Key + Profile */}
+        {/* Right buttons: Mobile + AI Key + Profile */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <button
             onClick={onOpenInstall}
             title="Install app to iOS / Android"
-            aria-label="Install app to iOS / Android"
-            style={{
-              width: '32px',
-              height: '32px',
-              borderRadius: '50%',
-              border: '1px solid rgba(56, 189, 248, 0.3)',
-              background: 'rgba(56, 189, 248, 0.1)',
-              color: '#38bdf8',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              transition: 'all 0.15s ease'
-            }}
+            className="btn-icon"
+            style={{ width: '32px', height: '32px' }}
           >
-            <Smartphone size={15} />
+            <Smartphone size={15} color="var(--text-secondary)" />
           </button>
 
           <button
             onClick={onOpenApiKey}
-            title={apiKey ? 'Gemini API Connected' : 'Configure Gemini API Key'}
+            title={apiKey ? 'Gemini AI Live' : 'Configure AI Key'}
             style={{
               display: 'flex',
               alignItems: 'center',
               gap: '4px',
-              padding: '6px 9px',
-              borderRadius: '99px',
-              border: `1px solid ${apiKey ? 'rgba(16, 185, 129, 0.4)' : 'var(--border-subtle)'}`,
-              background: apiKey ? 'rgba(16, 185, 129, 0.1)' : 'rgba(255, 255, 255, 0.05)',
-              color: apiKey ? '#34d399' : 'var(--text-secondary)',
-              fontSize: '11.5px',
-              fontWeight: 600,
+              padding: '4px 8px',
+              borderRadius: '999px',
+              border: `1px solid ${apiKey ? 'rgba(99, 102, 241, 0.4)' : 'var(--border-subtle)'}`,
+              background: apiKey ? 'rgba(99, 102, 241, 0.12)' : 'rgba(255, 255, 255, 0.04)',
+              color: apiKey ? '#a5b4fc' : 'var(--text-muted)',
+              fontSize: '11px',
+              fontWeight: 700,
               cursor: 'pointer'
             }}
           >
-            <Key size={13} />
-            <span>{apiKey ? 'API Live' : 'AI Key'}</span>
+            <Key size={12} />
+            <span>{apiKey ? 'AI Active' : 'AI Key'}</span>
           </button>
 
           <button
             onClick={onOpenProfile}
-            style={{
-              width: '32px',
-              height: '32px',
-              borderRadius: '50%',
-              background: 'var(--bg-surface-elevated)',
-              border: '1px solid var(--border-subtle)',
-              color: 'var(--text-primary)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer'
-            }}
+            className="btn-icon"
+            style={{ width: '32px', height: '32px' }}
             title="User Profile & Goals"
           >
-            <User size={16} />
+            <User size={15} color="var(--text-secondary)" />
           </button>
         </div>
       </div>
 
-      {/* Date Navigation & Goal Pill */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <button
-            onClick={handlePrevDay}
-            className="btn-icon"
-            style={{ width: '30px', height: '30px' }}
-            title="Previous Day"
-          >
-            <ChevronLeft size={16} />
-          </button>
+      {/* Date Switcher Center Bar */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        background: 'rgba(255, 255, 255, 0.03)',
+        borderRadius: 'var(--radius-md)',
+        padding: '3px 6px',
+        border: '1px solid var(--border-subtle)'
+      }}>
+        <button
+          onClick={handlePrevDay}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: 'var(--text-secondary)',
+            cursor: 'pointer',
+            padding: '4px'
+          }}
+        >
+          <ChevronLeft size={16} />
+        </button>
 
-          <div
-            onClick={() => {
-              const today = formatDateKey(new Date());
-              setSelectedDate(today);
-            }}
-            style={{
-              fontWeight: 700,
-              fontSize: '14px',
-              padding: '4px 8px',
-              cursor: 'pointer',
-              color: isToday ? '#10b981' : 'var(--text-primary)'
-            }}
-          >
-            {formatDisplayDate(selectedDate)}
-          </div>
-
-          <button
-            onClick={handleNextDay}
-            className="btn-icon"
-            style={{ width: '30px', height: '30px' }}
-            title="Next Day"
-          >
-            <ChevronRight size={16} />
-          </button>
+        <div
+          onClick={() => {
+            const today = formatDateKey(new Date());
+            setSelectedDate(today);
+          }}
+          style={{
+            fontSize: '12.5px',
+            fontWeight: 700,
+            color: isToday ? '#a5b4fc' : '#ffffff',
+            cursor: 'pointer'
+          }}
+        >
+          {formatDisplayDate(selectedDate)}
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          {calorieTarget && (
-            <span
-              title="Daily Calorie Target"
-              style={{
-                fontSize: '11.5px',
-                fontWeight: 700,
-                color: 'var(--text-secondary)',
-                fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-                background: 'rgba(255, 255, 255, 0.04)',
-                padding: '3px 8px',
-                borderRadius: '6px',
-                border: '1px solid rgba(255, 255, 255, 0.06)'
-              }}
-            >
-              <span>🎯</span>
-              <span>{calorieTarget.toLocaleString()} kcal</span>
-            </span>
-          )}
-
-          <div className={`badge ${goalBadge.class}`} style={{ fontSize: '11px' }}>
-            {goalBadge.text}
-          </div>
-        </div>
+        <button
+          onClick={handleNextDay}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: 'var(--text-secondary)',
+            cursor: 'pointer',
+            padding: '4px'
+          }}
+        >
+          <ChevronRight size={16} />
+        </button>
       </div>
     </header>
   );
