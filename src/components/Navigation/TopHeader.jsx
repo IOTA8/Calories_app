@@ -21,17 +21,7 @@ export function TopHeader({ onOpenProfile, onOpenApiKey, onOpenInstall }) {
   const isToday = selectedDate === formatDateKey(new Date());
 
   return (
-    <header style={{
-      padding: '12px 18px 10px 18px',
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '8px',
-      background: 'rgba(8, 11, 17, 0.95)',
-      borderBottom: '1px solid var(--border-subtle)',
-      flexShrink: 0,
-      zIndex: 40,
-      backdropFilter: 'blur(20px)'
-    }}>
+    <header className="app-top-header">
       {/* Top Row: App Brand & Quick Settings */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
