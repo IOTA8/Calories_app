@@ -25,9 +25,6 @@ export function MealSection({ meals: propMeals, onAddMeal, onDeleteMeal, onEditM
       e.stopPropagation();
     }
     deleteMeal(selectedDate, item?.id, item);
-    if (onDeleteMeal) {
-      onDeleteMeal(item?.id || item, item);
-    }
   };
 
   return (

@@ -292,65 +292,93 @@ export function NutritionProvider({ children }) {
     });
   };
 
-  const deleteMeal = (dateKey, mealId, itemRef) => {
+  const deleteMeal = (dateKey, mealIdOrItem, itemFallback) => {
+    const targetDate = dateKey || selectedDate;
     setMeals(prev => {
-      const nextState = { ...prev };
-      const targetDate = dateKey || selectedDate;
+      const currentList = prev[targetDate] || [];
+      if (!currentList || currentList.length === 0) {
+        // Search all dates if not found in targetDate
+        const allDates = Object.keys(prev);
+        for (const d of allDates) {
+          const list = prev[d];
+          if (!Array.isArray(list) || list.length === 0) continue;
 
-      // Search target date first, then fallback to any other date in case of timezone/dateKey mismatch
-      const datesToSearch = nextState[targetDate]
-        ? [targetDate, ...Object.keys(nextState).filter(k => k !== targetDate)]
-        : Object.keys(nextState);
+          const filtered = list.filter(m => {
+            if (mealIdOrItem && (typeof mealIdOrItem === 'string' || typeof mealIdOrItem === 'number') && m.id && String(m.id) === String(mealIdOrItem)) return false;
+            if (typeof mealIdOrItem === 'object' && mealIdOrItem?.id && m.id && String(m.id) === String(mealIdOrItem.id)) return false;
+            if (itemFallback?.id && m.id && String(m.id) === String(itemFallback.id)) return false;
+            if (typeof mealIdOrItem === 'object' && m === mealIdOrItem) return false;
+            if (itemFallback && m === itemFallback) return false;
+            const targetName = itemFallback?.name || (typeof mealIdOrItem === 'object' ? mealIdOrItem?.name : (typeof mealIdOrItem === 'string' ? mealIdOrItem : null));
+            if (targetName && (m.name || '').trim().toLowerCase() === targetName.trim().toLowerCase()) {
+              return false;
+            }
+            return true;
+          });
 
-      for (const d of datesToSearch) {
-        const list = nextState[d];
-        if (!Array.isArray(list) || list.length === 0) continue;
-
-        const initialCount = list.length;
-
-        // Strategy 1: Match by unique ID
-        let filtered = list.filter(m => {
-          if (mealId && m.id && String(m.id) === String(mealId)) return false;
-          if (itemRef?.id && m.id && String(m.id) === String(itemRef.id)) return false;
-          return true;
-        });
-
-        // Strategy 2: Match by exact object reference
-        if (filtered.length === initialCount && itemRef) {
-          filtered = list.filter(m => m !== itemRef);
-        }
-
-        // Strategy 3: Match by name + calories + mealType
-        if (filtered.length === initialCount) {
-          const targetName = itemRef?.name || (typeof mealId === 'string' ? mealId : null);
-          const targetCalories = itemRef?.calories;
-          const targetMealType = itemRef?.mealType;
-
-          if (targetName) {
-            let removedOne = false;
-            filtered = list.filter(m => {
-              if (removedOne) return true;
-
-              const nameMatches = (m.name || '').trim().toLowerCase() === targetName.trim().toLowerCase();
-              const caloriesMatch = targetCalories !== undefined ? m.calories === targetCalories : true;
-              const typeMatch = targetMealType ? m.mealType === targetMealType : true;
-
-              if (nameMatches && caloriesMatch && typeMatch) {
-                removedOne = true;
-                return false;
-              }
-              return true;
-            });
+          if (filtered.length < list.length) {
+            return {
+              ...prev,
+              [d]: filtered
+            };
           }
         }
+        return prev;
+      }
 
-        if (filtered.length < initialCount) {
-          nextState[d] = filtered;
-          break; // successfully deleted!
+      // Filter from currentList
+      let filtered = currentList.filter(m => {
+        // 1. By ID if string/number
+        if (mealIdOrItem && (typeof mealIdOrItem === 'string' || typeof mealIdOrItem === 'number')) {
+          if (m.id && String(m.id) === String(mealIdOrItem)) return false;
+        }
+        // 2. By ID if object
+        if (typeof mealIdOrItem === 'object' && mealIdOrItem?.id && m.id && String(m.id) === String(mealIdOrItem.id)) {
+          return false;
+        }
+        if (itemFallback?.id && m.id && String(m.id) === String(itemFallback.id)) {
+          return false;
+        }
+        // 3. By reference
+        if (typeof mealIdOrItem === 'object' && m === mealIdOrItem) return false;
+        if (itemFallback && m === itemFallback) return false;
+        // 4. By name & calories & mealType
+        const obj = (typeof mealIdOrItem === 'object' && mealIdOrItem !== null) ? mealIdOrItem : itemFallback;
+        if (obj) {
+          if ((m.name || '').trim().toLowerCase() === (obj.name || '').trim().toLowerCase()) {
+            if (obj.calories !== undefined ? m.calories === obj.calories : true) {
+              if (obj.mealType ? m.mealType === obj.mealType : true) {
+                return false;
+              }
+            }
+          }
+        } else if (typeof mealIdOrItem === 'string') {
+          if ((m.name || '').trim().toLowerCase() === mealIdOrItem.trim().toLowerCase()) {
+            return false;
+          }
+        }
+        return true;
+      });
+
+      // If nothing was filtered (e.g. legacy element without matching ID), force delete by name
+      if (filtered.length === currentList.length && currentList.length > 0) {
+        const targetName = (typeof mealIdOrItem === 'object' ? mealIdOrItem?.name : (typeof mealIdOrItem === 'string' ? mealIdOrItem : itemFallback?.name));
+        if (targetName) {
+          let removed = false;
+          filtered = currentList.filter(m => {
+            if (!removed && (m.name || '').trim().toLowerCase() === targetName.trim().toLowerCase()) {
+              removed = true;
+              return false;
+            }
+            return true;
+          });
         }
       }
 
-      return nextState;
+      return {
+        ...prev,
+        [targetDate]: filtered
+      };
     });
   };
 

@@ -159,7 +159,6 @@ function MainApp() {
               <MealSection
                 meals={summary.meals}
                 onAddMeal={handleOpenManualAdd}
-                onDeleteMeal={(mealIdOrItem, item, index) => deleteMeal(selectedDate, mealIdOrItem || item, index)}
                 onEditMeal={handleEditMeal}
               />
             </div>
