@@ -178,7 +178,7 @@ export function TrendsView({ onSelectDate }) {
         </div>
 
         {/* Recent Weigh-In Pills */}
-        {emaWeights.length > 0 && (
+        {emaWeights.length > 0 ? (
           <div>
             <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600, marginBottom: '6px' }}>
               Recent Trend Points (EMA Smoothed):
@@ -206,6 +206,10 @@ export function TrendsView({ onSelectDate }) {
                 </div>
               ))}
             </div>
+          </div>
+        ) : (
+          <div style={{ fontSize: '11.5px', color: 'var(--text-muted)', textAlign: 'center', padding: '6px 0' }}>
+            No weigh-ins logged yet. Tap <strong>+ Log Weight</strong> to track your progress!
           </div>
         )}
       </div>

@@ -118,23 +118,7 @@ const getInitialMeals = () => {
   };
 };
 
-const getInitialWeightLogs = () => {
-  const logs = [];
-  const startWeight = 79.8;
-  for (let i = 14; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    // realistic downward trend with natural daily water fluctuation
-    const naturalFluctuation = (Math.sin(i * 1.5) * 0.35);
-    const weight = parseFloat((startWeight - (14 - i) * 0.09 + naturalFluctuation).toFixed(2));
-    logs.push({
-      date: formatDateKey(d),
-      weight,
-      note: i === 0 ? 'Morning weigh-in (fasted)' : ''
-    });
-  }
-  return logs;
-};
+const getInitialWeightLogs = () => [];
 
 export function NutritionProvider({ children }) {
   const [profile, setProfile] = useState(() => {
@@ -146,17 +130,22 @@ export function NutritionProvider({ children }) {
 
   const [meals, setMeals] = useState(() => {
     const saved = localStorage.getItem('nutrivision_meals');
-    return saved ? JSON.parse(saved) : getInitialMeals();
+    return saved ? JSON.parse(saved) : {};
   });
 
   const [waterLogs, setWaterLogs] = useState(() => {
     const saved = localStorage.getItem('nutrivision_water');
-    return saved ? JSON.parse(saved) : { [formatDateKey(new Date())]: 1500 };
+    return saved ? JSON.parse(saved) : {};
   });
 
   const [weightLogs, setWeightLogs] = useState(() => {
     const saved = localStorage.getItem('nutrivision_weights');
-    return saved ? JSON.parse(saved) : getInitialWeightLogs();
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  const [workouts, setWorkouts] = useState(() => {
+    const saved = localStorage.getItem('nutrivision_workouts');
+    return saved ? JSON.parse(saved) : {};
   });
 
   const [apiKey, setApiKey] = useState(() => {
@@ -165,7 +154,7 @@ export function NutritionProvider({ children }) {
 
   const [fastingState, setFastingState] = useState(() => {
     const saved = localStorage.getItem('nutrivision_fasting');
-    return saved ? JSON.parse(saved) : { isFasting: true, startTime: Date.now() - 1000 * 60 * 60 * 14, targetHours: 16 };
+    return saved ? JSON.parse(saved) : { isFasting: false, startTime: Date.now(), targetHours: 16 };
   });
 
   const [savedFoods, setSavedFoods] = useState(() => {
@@ -189,6 +178,10 @@ export function NutritionProvider({ children }) {
   useEffect(() => {
     localStorage.setItem('nutrivision_weights', JSON.stringify(weightLogs));
   }, [weightLogs]);
+
+  useEffect(() => {
+    localStorage.setItem('nutrivision_workouts', JSON.stringify(workouts));
+  }, [workouts]);
 
   useEffect(() => {
     localStorage.setItem('nutrivision_gemini_key', apiKey);
@@ -227,7 +220,10 @@ export function NutritionProvider({ children }) {
       return acc;
     }, { calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 });
 
-    const remainingCalories = targets.targetCalories - totals.calories;
+    const dayWorkouts = workouts[dateKey] || [];
+    const burnedCalories = dayWorkouts.reduce((sum, w) => sum + (parseInt(w.caloriesBurned, 10) || 0), 0);
+
+    const remainingCalories = targets.targetCalories - totals.calories + burnedCalories;
     const remainingProtein = Math.max(0, targets.proteinGrams - totals.protein);
     const remainingCarbs = Math.max(0, targets.carbGrams - totals.carbs);
     const remainingFat = Math.max(0, targets.fatGrams - totals.fat);
@@ -237,6 +233,8 @@ export function NutritionProvider({ children }) {
     return {
       dateKey,
       meals: dayMeals,
+      workouts: dayWorkouts,
+      burnedCalories,
       totals,
       remainingCalories,
       remainingProtein,
@@ -300,11 +298,52 @@ export function NutritionProvider({ children }) {
     });
   };
 
+  const setWaterAmount = (dateKey, exactAmount) => {
+    setWaterLogs(prev => ({
+      ...prev,
+      [dateKey]: Math.max(0, parseInt(exactAmount, 10) || 0)
+    }));
+  };
+
   const resetWater = (dateKey) => {
     setWaterLogs(prev => ({
       ...prev,
       [dateKey]: 0
     }));
+  };
+
+  const addWorkout = (dateKey, workoutData) => {
+    const newWorkout = {
+      ...workoutData,
+      id: 'workout_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
+      title: workoutData.title || 'Workout',
+      type: workoutData.type || 'Strength Training',
+      durationMin: parseInt(workoutData.durationMin, 10) || 30,
+      caloriesBurned: parseInt(workoutData.caloriesBurned, 10) || 200,
+      timestamp: Date.now()
+    };
+    setWorkouts(prev => {
+      const list = prev[dateKey] || [];
+      return { ...prev, [dateKey]: [...list, newWorkout] };
+    });
+    return newWorkout;
+  };
+
+  const deleteWorkout = (dateKey, workoutId) => {
+    setWorkouts(prev => {
+      const list = prev[dateKey] || [];
+      return { ...prev, [dateKey]: list.filter(w => w.id !== workoutId) };
+    });
+  };
+
+  const updateWorkout = (dateKey, workoutId, updatedData) => {
+    setWorkouts(prev => {
+      const list = prev[dateKey] || [];
+      return {
+        ...prev,
+        [dateKey]: list.map(w => w.id === workoutId ? { ...w, ...updatedData } : w)
+      };
+    });
   };
 
   const logWeight = (weight, dateKey = selectedDate, note = '') => {
@@ -444,8 +483,12 @@ export function NutritionProvider({ children }) {
         getDaySummary,
         addMeal,
         updateMeal,
-        deleteMeal,
+        workouts,
+        addWorkout,
+        deleteWorkout,
+        updateWorkout,
         logWater,
+        setWaterAmount,
         resetWater,
         logWeight,
         deleteWeight,
