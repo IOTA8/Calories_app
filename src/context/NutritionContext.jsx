@@ -293,92 +293,71 @@ export function NutritionProvider({ children }) {
   };
 
   const deleteMeal = (dateKey, mealIdOrItem, itemFallback) => {
-    const targetDate = dateKey || selectedDate;
     setMeals(prev => {
-      const currentList = prev[targetDate] || [];
-      if (!currentList || currentList.length === 0) {
-        // Search all dates if not found in targetDate
-        const allDates = Object.keys(prev);
-        for (const d of allDates) {
-          const list = prev[d];
-          if (!Array.isArray(list) || list.length === 0) continue;
+      const nextMeals = { ...prev };
+      const targetDate = dateKey || selectedDate;
 
-          const filtered = list.filter(m => {
-            if (mealIdOrItem && (typeof mealIdOrItem === 'string' || typeof mealIdOrItem === 'number') && m.id && String(m.id) === String(mealIdOrItem)) return false;
-            if (typeof mealIdOrItem === 'object' && mealIdOrItem?.id && m.id && String(m.id) === String(mealIdOrItem.id)) return false;
-            if (itemFallback?.id && m.id && String(m.id) === String(itemFallback.id)) return false;
-            if (typeof mealIdOrItem === 'object' && m === mealIdOrItem) return false;
-            if (itemFallback && m === itemFallback) return false;
-            const targetName = itemFallback?.name || (typeof mealIdOrItem === 'object' ? mealIdOrItem?.name : (typeof mealIdOrItem === 'string' ? mealIdOrItem : null));
-            if (targetName && (m.name || '').trim().toLowerCase() === targetName.trim().toLowerCase()) {
-              return false;
+      const datesToSearch = nextMeals[targetDate]
+        ? [targetDate, ...Object.keys(nextMeals).filter(k => k !== targetDate)]
+        : Object.keys(nextMeals);
+
+      const targetObj = (typeof mealIdOrItem === 'object' && mealIdOrItem !== null) ? mealIdOrItem : itemFallback;
+      const targetId = typeof mealIdOrItem === 'string' || typeof mealIdOrItem === 'number'
+        ? String(mealIdOrItem)
+        : (targetObj?.id ? String(targetObj.id) : null);
+      const targetName = targetObj?.name || (typeof mealIdOrItem === 'string' ? mealIdOrItem : null);
+      const targetCal = targetObj?.calories !== undefined ? parseInt(targetObj.calories, 10) : null;
+      const targetType = targetObj?.mealType ? targetObj.mealType.toLowerCase() : null;
+
+      for (const d of datesToSearch) {
+        const list = nextMeals[d];
+        if (!Array.isArray(list) || list.length === 0) continue;
+
+        let removedIndex = -1;
+
+        // 1. Match by ID
+        if (targetId) {
+          removedIndex = list.findIndex(m => m.id && String(m.id) === targetId);
+        }
+
+        // 2. Match by exact reference
+        if (removedIndex === -1 && targetObj) {
+          removedIndex = list.findIndex(m => m === targetObj);
+        }
+
+        // 3. Match by Name + Calories + MealType (loose comparison)
+        if (removedIndex === -1 && targetName) {
+          const normName = targetName.trim().toLowerCase();
+          removedIndex = list.findIndex(m => {
+            const mName = (m.name || '').trim().toLowerCase();
+            if (mName !== normName) return false;
+            
+            if (targetCal !== null && !isNaN(targetCal)) {
+              const mCal = parseInt(m.calories, 10);
+              if (!isNaN(mCal) && mCal !== targetCal) return false;
             }
-            return true;
-          });
 
-          if (filtered.length < list.length) {
-            return {
-              ...prev,
-              [d]: filtered
-            };
-          }
-        }
-        return prev;
-      }
-
-      // Filter from currentList
-      let filtered = currentList.filter(m => {
-        // 1. By ID if string/number
-        if (mealIdOrItem && (typeof mealIdOrItem === 'string' || typeof mealIdOrItem === 'number')) {
-          if (m.id && String(m.id) === String(mealIdOrItem)) return false;
-        }
-        // 2. By ID if object
-        if (typeof mealIdOrItem === 'object' && mealIdOrItem?.id && m.id && String(m.id) === String(mealIdOrItem.id)) {
-          return false;
-        }
-        if (itemFallback?.id && m.id && String(m.id) === String(itemFallback.id)) {
-          return false;
-        }
-        // 3. By reference
-        if (typeof mealIdOrItem === 'object' && m === mealIdOrItem) return false;
-        if (itemFallback && m === itemFallback) return false;
-        // 4. By name & calories & mealType
-        const obj = (typeof mealIdOrItem === 'object' && mealIdOrItem !== null) ? mealIdOrItem : itemFallback;
-        if (obj) {
-          if ((m.name || '').trim().toLowerCase() === (obj.name || '').trim().toLowerCase()) {
-            if (obj.calories !== undefined ? m.calories === obj.calories : true) {
-              if (obj.mealType ? m.mealType === obj.mealType : true) {
-                return false;
-              }
+            if (targetType && m.mealType) {
+              if (m.mealType.toLowerCase() !== targetType) return false;
             }
-          }
-        } else if (typeof mealIdOrItem === 'string') {
-          if ((m.name || '').trim().toLowerCase() === mealIdOrItem.trim().toLowerCase()) {
-            return false;
-          }
-        }
-        return true;
-      });
 
-      // If nothing was filtered (e.g. legacy element without matching ID), force delete by name
-      if (filtered.length === currentList.length && currentList.length > 0) {
-        const targetName = (typeof mealIdOrItem === 'object' ? mealIdOrItem?.name : (typeof mealIdOrItem === 'string' ? mealIdOrItem : itemFallback?.name));
-        if (targetName) {
-          let removed = false;
-          filtered = currentList.filter(m => {
-            if (!removed && (m.name || '').trim().toLowerCase() === targetName.trim().toLowerCase()) {
-              removed = true;
-              return false;
-            }
             return true;
           });
         }
+
+        // 4. Match by Name only (loose comparison)
+        if (removedIndex === -1 && targetName) {
+          const normName = targetName.trim().toLowerCase();
+          removedIndex = list.findIndex(m => (m.name || '').trim().toLowerCase() === normName);
+        }
+
+        if (removedIndex !== -1) {
+          nextMeals[d] = list.filter((_, idx) => idx !== removedIndex);
+          break;
+        }
       }
 
-      return {
-        ...prev,
-        [targetDate]: filtered
-      };
+      return nextMeals;
     });
   };
 
