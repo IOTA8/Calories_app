@@ -130,7 +130,21 @@ export function NutritionProvider({ children }) {
 
   const [meals, setMeals] = useState(() => {
     const saved = localStorage.getItem('nutrivision_meals');
-    return saved ? JSON.parse(saved) : {};
+    if (!saved) return {};
+    try {
+      const parsed = JSON.parse(saved);
+      Object.keys(parsed).forEach(dateKey => {
+        if (Array.isArray(parsed[dateKey])) {
+          parsed[dateKey] = parsed[dateKey].map((m, i) => ({
+            ...m,
+            id: m.id ? String(m.id) : `meal_${Date.now()}_${i}_${Math.random().toString(36).substr(2, 5)}`
+          }));
+        }
+      });
+      return parsed;
+    } catch {
+      return {};
+    }
   });
 
   const [waterLogs, setWaterLogs] = useState(() => {
@@ -268,21 +282,23 @@ export function NutritionProvider({ children }) {
   };
 
   const updateMeal = (dateKey, mealId, updatedData) => {
+    if (!mealId) return;
     setMeals(prev => {
       const currentList = prev[dateKey] || [];
       return {
         ...prev,
-        [dateKey]: currentList.map(m => m.id === mealId ? { ...m, ...updatedData } : m)
+        [dateKey]: currentList.map(m => String(m.id) === String(mealId) ? { ...m, ...updatedData } : m)
       };
     });
   };
 
   const deleteMeal = (dateKey, mealId) => {
+    if (!mealId) return;
     setMeals(prev => {
       const currentList = prev[dateKey] || [];
       return {
         ...prev,
-        [dateKey]: currentList.filter(m => m.id !== mealId)
+        [dateKey]: currentList.filter(m => String(m.id) !== String(mealId))
       };
     });
   };

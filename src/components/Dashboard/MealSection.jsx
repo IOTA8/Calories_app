@@ -107,79 +107,89 @@ export function MealSection({ meals, onAddMeal, onDeleteMeal, onEditMeal }) {
                       }}
                     >
                       <div
-                        onClick={() => onEditMeal && onEditMeal(item.id, item)}
                         style={{
                           display: 'flex',
                           alignItems: 'center',
-                          gap: '12px',
-                          cursor: 'pointer'
+                          justifyContent: 'space-between',
+                          gap: '8px'
                         }}
                       >
-                        {/* Food Image / Icon */}
-                        {item.imageUrl ? (
-                          <img
-                            src={item.imageUrl}
-                            alt={item.name}
-                            style={{
+                        {/* Left/Middle: Clickable to Edit */}
+                        <div
+                          onClick={() => onEditMeal && onEditMeal(item.id, item)}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '12px',
+                            cursor: 'pointer',
+                            flex: 1,
+                            minWidth: 0
+                          }}
+                        >
+                          {/* Food Image / Icon */}
+                          {item.imageUrl ? (
+                            <img
+                              src={item.imageUrl}
+                              alt={item.name}
+                              style={{
+                                width: '42px',
+                                height: '42px',
+                                borderRadius: '50%',
+                                objectFit: 'cover',
+                                border: '1px solid var(--border-subtle)',
+                                flexShrink: 0
+                              }}
+                            />
+                          ) : (
+                            <div style={{
                               width: '42px',
                               height: '42px',
                               borderRadius: '50%',
-                              objectFit: 'cover',
-                              border: '1px solid var(--border-subtle)',
+                              background: 'rgba(255, 255, 255, 0.05)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              fontSize: '18px',
                               flexShrink: 0
-                            }}
-                          />
-                        ) : (
-                          <div style={{
-                            width: '42px',
-                            height: '42px',
-                            borderRadius: '50%',
-                            background: 'rgba(255, 255, 255, 0.05)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '18px',
-                            flexShrink: 0
-                          }}>
-                            {config.emoji}
-                          </div>
-                        )}
+                            }}>
+                              {config.emoji}
+                            </div>
+                          )}
 
-                        {/* Title & Macros */}
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{
-                            fontWeight: 700,
-                            fontSize: '13.5px',
-                            color: '#ffffff',
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis'
-                          }}>
-                            {item.name}
-                          </div>
-                          <div style={{
-                            fontSize: '11px',
-                            color: 'var(--text-muted)',
-                            marginTop: '2px'
-                          }}>
-                            P: {item.protein}g • C: {item.carbs}g • F: {item.fat}g
+                          {/* Title & Macros */}
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{
+                              fontWeight: 700,
+                              fontSize: '13.5px',
+                              color: '#ffffff',
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis'
+                            }}>
+                              {item.name}
+                            </div>
+                            <div style={{
+                              fontSize: '11px',
+                              color: 'var(--text-muted)',
+                              marginTop: '2px'
+                            }}>
+                              P: {item.protein}g • C: {item.carbs}g • F: {item.fat}g
+                            </div>
                           </div>
                         </div>
 
                         {/* Right: Calories & Actions */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
                           <span className="font-mono" style={{ fontSize: '13.5px', fontWeight: 800, color: '#ffffff' }}>
                             {item.calories} <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>kcal</span>
                           </span>
 
                           {item.items && item.items.length > 0 && (
                             <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                toggleMealExpand(item.id);
-                              }}
+                              type="button"
+                              onClick={() => toggleMealExpand(item.id)}
                               className="btn-icon"
-                              style={{ width: '26px', height: '26px', background: 'transparent', border: 'none', color: 'var(--text-secondary)' }}
+                              style={{ width: '28px', height: '28px', background: 'transparent', border: 'none', color: 'var(--text-secondary)' }}
                               title="Toggle Breakdown"
                             >
                               {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
@@ -187,18 +197,15 @@ export function MealSection({ meals, onAddMeal, onDeleteMeal, onEditMeal }) {
                           )}
 
                           <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onDeleteMeal(item.id);
-                            }}
+                            type="button"
+                            onClick={() => onDeleteMeal(item.id)}
                             className="btn-icon"
                             style={{
-                              width: '26px',
-                              height: '26px',
-                              background: 'transparent',
-                              border: 'none',
-                              color: '#fb7185',
-                              opacity: 0.8
+                              width: '28px',
+                              height: '28px',
+                              background: 'rgba(244, 63, 94, 0.1)',
+                              border: '1px solid rgba(244, 63, 94, 0.25)',
+                              color: '#fb7185'
                             }}
                             title="Delete from diary"
                           >
