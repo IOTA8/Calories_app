@@ -600,6 +600,7 @@ export function NutritionProvider({ children }) {
         getDaySummary,
         addMeal,
         updateMeal,
+        deleteMeal,
         workouts,
         addWorkout,
         deleteWorkout,
