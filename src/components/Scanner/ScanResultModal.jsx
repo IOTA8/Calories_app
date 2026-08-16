@@ -1,36 +1,42 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles, Check, X, Plus, Minus, Flame, Dumbbell, Wheat, Droplet, Award, Calendar } from 'lucide-react';
+import { Sparkles, Check, X, Plus, Minus, Flame, Dumbbell, Wheat, Droplet, Bookmark } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
-export function ScanResultModal({ isOpen, result, onClose, onConfirmLog, defaultMealType = 'lunch' }) {
+export function ScanResultModal({ isOpen, result, onClose, onConfirmLog, onSaveFood, defaultMealType = 'lunch' }) {
   if (!isOpen || !result) return null;
 
   const [mealName, setMealName] = useState(result.mealName || 'Scanned Meal');
   const [mealType, setMealType] = useState(defaultMealType);
   const [items, setItems] = useState(result.items ? result.items.map(i => ({ ...i })) : []);
+  
+  const [manualOverrides, setManualOverrides] = useState({ calories: null, protein: null, carbs: null, fat: null });
+  const [editingMacro, setEditingMacro] = useState(null); // 'calories', 'protein', 'carbs', 'fat'
+  const [editMacroValue, setEditMacroValue] = useState('');
+  
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
-  // Update when result changes
   useEffect(() => {
     if (result) {
       setMealName(result.mealName || 'Scanned Meal');
       setItems(result.items ? result.items.map(i => ({ ...i })) : []);
+      setManualOverrides({ calories: null, protein: null, carbs: null, fat: null });
+      setEditingMacro(null);
     }
   }, [result]);
 
-  // Adjust portion size of an ingredient
   const handlePortionChange = (index, deltaGrams) => {
     setItems(prev => {
       const updated = [...prev];
       const item = { ...updated[index] };
-      const currentGrams = item.portionGrams || 100;
-      const newGrams = Math.max(10, currentGrams + deltaGrams);
+      const currentGrams = parseInt(item.portionGrams) || 100;
+      const newGrams = Math.max(1, currentGrams + deltaGrams);
       const ratio = newGrams / currentGrams;
 
       item.portionGrams = newGrams;
-      item.calories = Math.round(item.calories * ratio);
-      item.protein = parseFloat((item.protein * ratio).toFixed(1));
-      item.carbs = parseFloat((item.carbs * ratio).toFixed(1));
-      item.fat = parseFloat((item.fat * ratio).toFixed(1));
+      item.calories = Math.round((item.calories || 0) * ratio);
+      item.protein = parseFloat(((item.protein || 0) * ratio).toFixed(1));
+      item.carbs = parseFloat(((item.carbs || 0) * ratio).toFixed(1));
+      item.fat = parseFloat(((item.fat || 0) * ratio).toFixed(1));
       if (item.fiber !== undefined) {
         item.fiber = parseFloat((item.fiber * ratio).toFixed(1));
       }
@@ -40,44 +46,83 @@ export function ScanResultModal({ isOpen, result, onClose, onConfirmLog, default
     });
   };
 
-  // Recalculate totals dynamically
+  const handleDirectPortionChange = (index, val) => {
+    setItems(prev => {
+      const updated = [...prev];
+      const item = { ...updated[index] };
+      
+      if (val === '') {
+        item.portionGrams = '';
+        updated[index] = item;
+        return updated;
+      }
+      
+      const newGrams = parseInt(val, 10);
+      if (isNaN(newGrams) || newGrams < 0) return updated;
+
+      const currentGrams = parseInt(item.portionGrams, 10) || 100;
+      const ratio = newGrams / (currentGrams === 0 ? 1 : currentGrams);
+
+      item.portionGrams = newGrams;
+      item.calories = Math.round((item.calories || 0) * ratio);
+      item.protein = parseFloat(((item.protein || 0) * ratio).toFixed(1));
+      item.carbs = parseFloat(((item.carbs || 0) * ratio).toFixed(1));
+      item.fat = parseFloat(((item.fat || 0) * ratio).toFixed(1));
+      
+      updated[index] = item;
+      return updated;
+    });
+  };
+
+  const updateItemField = (index, field, val) => {
+    setItems(prev => {
+      const updated = [...prev];
+      const item = { ...updated[index] };
+      item[field] = field === 'name' ? val : (val === '' ? '' : parseFloat(val) || 0);
+      updated[index] = item;
+      return updated;
+    });
+  };
+
+  const handleDeleteItem = (index) => {
+    setItems(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleAddItem = () => {
+    setItems(prev => [...prev, { name: 'New Item', portionGrams: 100, calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0 }]);
+  };
+
   const calculatedTotals = items.reduce((acc, item) => {
-    acc.calories += item.calories || 0;
-    acc.protein += item.protein || 0;
-    acc.carbs += item.carbs || 0;
-    acc.fat += item.fat || 0;
-    acc.fiber += item.fiber || 0;
+    acc.calories += (parseFloat(item.calories) || 0);
+    acc.protein += (parseFloat(item.protein) || 0);
+    acc.carbs += (parseFloat(item.carbs) || 0);
+    acc.fat += (parseFloat(item.fat) || 0);
+    acc.fiber += (parseFloat(item.fiber) || 0);
     return acc;
   }, {
-    calories: 0,
-    protein: 0,
-    carbs: 0,
-    fat: 0,
-    fiber: 0
+    calories: 0, protein: 0, carbs: 0, fat: 0, fiber: 0
   });
 
-  // Round numbers
   const totalCalories = Math.round(calculatedTotals.calories);
   const totalProtein = Math.round(calculatedTotals.protein);
   const totalCarbs = Math.round(calculatedTotals.carbs);
   const totalFat = Math.round(calculatedTotals.fat);
   const totalFiber = Math.round(calculatedTotals.fiber);
 
-  const handleConfirm = () => {
-    // Trigger celebration confetti
-    confetti({
-      particleCount: 50,
-      spread: 60,
-      origin: { y: 0.8 }
-    });
+  const displayCalories = manualOverrides.calories ?? totalCalories;
+  const displayProtein = manualOverrides.protein ?? totalProtein;
+  const displayCarbs = manualOverrides.carbs ?? totalCarbs;
+  const displayFat = manualOverrides.fat ?? totalFat;
 
+  const handleConfirm = () => {
+    confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 } });
     onConfirmLog({
       name: mealName,
       mealType,
-      calories: totalCalories,
-      protein: totalProtein,
-      carbs: totalCarbs,
-      fat: totalFat,
+      calories: displayCalories,
+      protein: displayProtein,
+      carbs: displayCarbs,
+      fat: displayFat,
       fiber: totalFiber,
       sugar: result.totalNutrition?.sugar || 3,
       sodiumMg: result.totalNutrition?.sodiumMg || 400,
@@ -88,23 +133,99 @@ export function ScanResultModal({ isOpen, result, onClose, onConfirmLog, default
     });
   };
 
+  const handleSaveFood = () => {
+    if (onSaveFood) {
+      onSaveFood({
+        name: mealName,
+        mealType,
+        calories: displayCalories,
+        protein: displayProtein,
+        carbs: displayCarbs,
+        fat: displayFat,
+        fiber: totalFiber,
+        items: items
+      });
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 1000);
+    }
+  };
+
+  const handleMacroCardClick = (macro, currentValue) => {
+    setEditingMacro(macro);
+    setEditMacroValue(currentValue);
+  };
+
+  const handleMacroBlur = (macro) => {
+    setManualOverrides(prev => ({
+      ...prev,
+      [macro]: editMacroValue === '' ? null : parseFloat(editMacroValue)
+    }));
+    setEditingMacro(null);
+  };
+
+  const renderMacroCard = (macro, label, Icon, color, currentValue, displayValue, unit = '') => (
+    <div 
+      onClick={() => handleMacroCardClick(macro, displayValue)}
+      style={{
+        background: 'var(--bg-surface-elevated)',
+        border: '1px solid var(--border-subtle)',
+        borderRadius: 'var(--radius-md)',
+        padding: '10px 6px',
+        textAlign: 'center',
+        cursor: 'pointer'
+      }}
+    >
+      <Icon size={15} color={color} style={{ margin: '0 auto 2px auto' }} />
+      {editingMacro === macro ? (
+        <input
+          type="number"
+          autoFocus
+          value={editMacroValue}
+          onChange={e => setEditMacroValue(e.target.value)}
+          onBlur={() => handleMacroBlur(macro)}
+          onKeyDown={e => e.key === 'Enter' && handleMacroBlur(macro)}
+          style={{ 
+            width: '100%', 
+            background: 'transparent', 
+            border: 'none', 
+            color, 
+            fontSize: '17px', 
+            fontWeight: 800, 
+            textAlign: 'center', 
+            outline: 'none',
+            padding: 0
+          }}
+          className="font-mono"
+        />
+      ) : (
+        <div className="font-mono" style={{ fontSize: '17px', fontWeight: 800, color }}>
+          {displayValue}{unit}
+        </div>
+      )}
+      <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600 }}>{label}</div>
+    </div>
+  );
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="bottom-sheet" onClick={(e) => e.stopPropagation()} style={{ height: '92vh' }}>
         <div className="sheet-handle-bar" />
 
-        {/* Header */}
         <div className="sheet-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Sparkles size={18} color="#10b981" />
             <span style={{ fontWeight: 800, fontSize: '16px', color: '#fff' }}>AI Nutrition Breakdown</span>
           </div>
-          <button onClick={onClose} className="btn-icon" style={{ width: '32px', height: '32px' }}>
-            <X size={16} />
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <button onClick={handleSaveFood} className="btn-icon" style={{ width: '32px', height: '32px' }} title="Save to My Foods">
+              <Bookmark size={16} fill={saveSuccess ? '#fbbf24' : 'none'} color={saveSuccess ? '#fbbf24' : 'currentColor'} />
+            </button>
+            <button onClick={onClose} className="btn-icon" style={{ width: '32px', height: '32px' }}>
+              <X size={16} />
+            </button>
+          </div>
         </div>
 
-        {/* Content */}
         <div className="sheet-content" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {/* Top Dish Card */}
           <div style={{
@@ -155,61 +276,10 @@ export function ScanResultModal({ isOpen, result, onClose, onConfirmLog, default
             gridTemplateColumns: 'repeat(4, 1fr)',
             gap: '8px'
           }}>
-            <div style={{
-              background: 'var(--bg-surface-elevated)',
-              border: '1px solid var(--border-subtle)',
-              borderRadius: 'var(--radius-md)',
-              padding: '10px 6px',
-              textAlign: 'center'
-            }}>
-              <Flame size={15} color="#10b981" style={{ margin: '0 auto 2px auto' }} />
-              <div className="font-mono" style={{ fontSize: '17px', fontWeight: 800, color: '#10b981' }}>
-                {totalCalories}
-              </div>
-              <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600 }}>Calories</div>
-            </div>
-
-            <div style={{
-              background: 'var(--bg-surface-elevated)',
-              border: '1px solid var(--border-subtle)',
-              borderRadius: 'var(--radius-md)',
-              padding: '10px 6px',
-              textAlign: 'center'
-            }}>
-              <Dumbbell size={15} color="#38bdf8" style={{ margin: '0 auto 2px auto' }} />
-              <div className="font-mono" style={{ fontSize: '17px', fontWeight: 800, color: '#38bdf8' }}>
-                {totalProtein}g
-              </div>
-              <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600 }}>Protein</div>
-            </div>
-
-            <div style={{
-              background: 'var(--bg-surface-elevated)',
-              border: '1px solid var(--border-subtle)',
-              borderRadius: 'var(--radius-md)',
-              padding: '10px 6px',
-              textAlign: 'center'
-            }}>
-              <Wheat size={15} color="#fbbf24" style={{ margin: '0 auto 2px auto' }} />
-              <div className="font-mono" style={{ fontSize: '17px', fontWeight: 800, color: '#fbbf24' }}>
-                {totalCarbs}g
-              </div>
-              <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600 }}>Carbs</div>
-            </div>
-
-            <div style={{
-              background: 'var(--bg-surface-elevated)',
-              border: '1px solid var(--border-subtle)',
-              borderRadius: 'var(--radius-md)',
-              padding: '10px 6px',
-              textAlign: 'center'
-            }}>
-              <Droplet size={15} color="#fb7185" style={{ margin: '0 auto 2px auto' }} />
-              <div className="font-mono" style={{ fontSize: '17px', fontWeight: 800, color: '#fb7185' }}>
-                {totalFat}g
-              </div>
-              <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontWeight: 600 }}>Fats</div>
-            </div>
+            {renderMacroCard('calories', 'Calories', Flame, '#10b981', totalCalories, displayCalories)}
+            {renderMacroCard('protein', 'Protein', Dumbbell, '#38bdf8', totalProtein, displayProtein, 'g')}
+            {renderMacroCard('carbs', 'Carbs', Wheat, '#fbbf24', totalCarbs, displayCarbs, 'g')}
+            {renderMacroCard('fat', 'Fats', Droplet, '#fb7185', totalFat, displayFat, 'g')}
           </div>
 
           {/* AI Coach Feedback Note */}
@@ -239,9 +309,9 @@ export function ScanResultModal({ isOpen, result, onClose, onConfirmLog, default
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <span style={{ fontSize: '13px', fontWeight: 700, color: '#ffffff' }}>
-                Detected Ingredients & Portion Scaling
+                Detected Ingredients
               </span>
-              <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Tap ± to adjust</span>
+              <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Edit or tap ±</span>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -259,37 +329,125 @@ export function ScanResultModal({ isOpen, result, onClose, onConfirmLog, default
                     gap: '8px'
                   }}
                 >
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 600, fontSize: '13px', color: '#fff' }}>
-                      {item.name}
-                    </div>
-                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
-                      {item.calories} kcal • P: {item.protein}g • C: {item.carbs}g • F: {item.fat}g
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <input 
+                      value={item.name} 
+                      onChange={(e) => updateItemField(idx, 'name', e.target.value)}
+                      style={{ 
+                        background: 'transparent', 
+                        border: 'none', 
+                        color: '#fff', 
+                        fontWeight: 600, 
+                        fontSize: '13px', 
+                        width: '100%', 
+                        outline: 'none',
+                        padding: 0
+                      }} 
+                    />
+                    <div style={{ 
+                      display: 'flex', 
+                      gap: '4px', 
+                      fontSize: '11px', 
+                      color: 'var(--text-muted)', 
+                      marginTop: '2px', 
+                      alignItems: 'center',
+                      flexWrap: 'wrap'
+                    }}>
+                      <input 
+                        type="number" 
+                        value={item.calories} 
+                        onChange={e => updateItemField(idx, 'calories', e.target.value)} 
+                        style={{ width: '32px', background: 'transparent', border: 'none', color: 'inherit', outline: 'none', padding: 0 }} 
+                      /> kcal • 
+                      P: <input 
+                        type="number" 
+                        value={item.protein} 
+                        onChange={e => updateItemField(idx, 'protein', e.target.value)} 
+                        style={{ width: '25px', background: 'transparent', border: 'none', color: 'inherit', outline: 'none', padding: 0 }} 
+                      />g • 
+                      C: <input 
+                        type="number" 
+                        value={item.carbs} 
+                        onChange={e => updateItemField(idx, 'carbs', e.target.value)} 
+                        style={{ width: '25px', background: 'transparent', border: 'none', color: 'inherit', outline: 'none', padding: 0 }} 
+                      />g • 
+                      F: <input 
+                        type="number" 
+                        value={item.fat} 
+                        onChange={e => updateItemField(idx, 'fat', e.target.value)} 
+                        style={{ width: '25px', background: 'transparent', border: 'none', color: 'inherit', outline: 'none', padding: 0 }} 
+                      />g
                     </div>
                   </div>
 
-                  {/* Portion stepper */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
                     <button
                       onClick={() => handlePortionChange(idx, -10)}
                       className="btn-icon"
-                      style={{ width: '28px', height: '28px' }}
+                      style={{ width: '24px', height: '24px' }}
                     >
                       <Minus size={13} />
                     </button>
-                    <span className="font-mono" style={{ fontSize: '12px', fontWeight: 700, minWidth: '42px', textAlign: 'center' }}>
-                      {item.portionGrams}g
-                    </span>
+                    
+                    <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                      <input
+                        type="number"
+                        value={item.portionGrams}
+                        onChange={e => handleDirectPortionChange(idx, e.target.value)}
+                        style={{ 
+                          width: '40px', 
+                          background: 'var(--bg-body)', 
+                          border: '1px solid var(--border-subtle)', 
+                          color: '#fff', 
+                          fontWeight: 700, 
+                          fontSize: '12px', 
+                          textAlign: 'center', 
+                          outline: 'none',
+                          borderRadius: '4px',
+                          padding: '2px 10px 2px 2px'
+                        }}
+                      />
+                      <span style={{ position: 'absolute', right: '4px', fontSize: '10px', color: 'var(--text-muted)', pointerEvents: 'none' }}>g</span>
+                    </div>
+
                     <button
                       onClick={() => handlePortionChange(idx, 10)}
                       className="btn-icon"
-                      style={{ width: '28px', height: '28px' }}
+                      style={{ width: '24px', height: '24px' }}
                     >
                       <Plus size={13} />
+                    </button>
+                    
+                    <button 
+                      onClick={() => handleDeleteItem(idx)} 
+                      className="btn-icon" 
+                      style={{ width: '24px', height: '24px', marginLeft: '2px' }}
+                    >
+                      <X size={14} color="#ef4444" />
                     </button>
                   </div>
                 </div>
               ))}
+              
+              <button 
+                onClick={handleAddItem} 
+                style={{ 
+                  background: 'transparent', 
+                  border: '1px dashed var(--border-subtle)', 
+                  borderRadius: 'var(--radius-md)', 
+                  padding: '10px', 
+                  color: '#10b981', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  gap: '6px', 
+                  fontSize: '13px', 
+                  fontWeight: 600,
+                  marginTop: '4px'
+                }}
+              >
+                <Plus size={14} /> Add Item
+              </button>
             </div>
           </div>
 

@@ -9,7 +9,7 @@ const MEAL_CONFIGS = [
   { type: 'snack', label: 'Snacks & Extras', icon: '🥑', color: '#c084fc', recommendedKcalPct: 0.10 }
 ];
 
-export function MealSection({ meals, onAddMeal, onDeleteMeal, onViewMealDetail }) {
+export function MealSection({ meals, onAddMeal, onDeleteMeal, onViewMealDetail, onEditMeal }) {
   const [expandedMealIds, setExpandedMealIds] = useState({});
 
   const toggleMealExpand = (mealId) => {
@@ -69,8 +69,9 @@ export function MealSection({ meals, onAddMeal, onDeleteMeal, onViewMealDetail }
             {mealItems.length === 0 ? (
               <div
                 onClick={() => onAddMeal(config.type)}
+                className="empty-state-card"
                 style={{
-                  padding: '12px',
+                  padding: '16px',
                   border: '1px dashed var(--border-subtle)',
                   borderRadius: 'var(--radius-md)',
                   textAlign: 'center',
@@ -78,10 +79,15 @@ export function MealSection({ meals, onAddMeal, onDeleteMeal, onViewMealDetail }
                   fontSize: '13px',
                   cursor: 'pointer',
                   marginTop: '10px',
-                  transition: 'background 0.15s ease'
+                  transition: 'background 0.15s ease',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px'
                 }}
               >
-                + Tap to log or snap {config.label.toLowerCase()}
+                <Plus size={16} />
+                Tap to add your first {config.label.toLowerCase()}
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -101,15 +107,19 @@ export function MealSection({ meals, onAddMeal, onDeleteMeal, onViewMealDetail }
                         gap: '8px'
                       }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <div 
+                        className="meal-row-interactive"
+                        onClick={() => onEditMeal && onEditMeal(item.id, item)}
+                        style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: onEditMeal ? 'pointer' : 'default' }}
+                      >
                         {item.imageUrl ? (
                           <img
                             src={item.imageUrl}
                             alt={item.name}
                             style={{
-                              width: '46px',
-                              height: '46px',
-                              borderRadius: '10px',
+                              width: '40px',
+                              height: '40px',
+                              borderRadius: '8px',
                               objectFit: 'cover',
                               border: '1px solid var(--border-subtle)',
                               flexShrink: 0
@@ -118,14 +128,14 @@ export function MealSection({ meals, onAddMeal, onDeleteMeal, onViewMealDetail }
                         ) : (
                           <div
                             style={{
-                              width: '46px',
-                              height: '46px',
-                              borderRadius: '10px',
+                              width: '40px',
+                              height: '40px',
+                              borderRadius: '8px',
                               background: 'rgba(255, 255, 255, 0.06)',
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
-                              fontSize: '20px',
+                              fontSize: '18px',
                               flexShrink: 0
                             }}
                           >
@@ -156,7 +166,7 @@ export function MealSection({ meals, onAddMeal, onDeleteMeal, onViewMealDetail }
                         </div>
 
                         {/* Expand / Delete actions */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }} onClick={(e) => e.stopPropagation()}>
                           {item.items && item.items.length > 0 && (
                             <button
                               onClick={() => toggleMealExpand(item.id)}
@@ -167,14 +177,6 @@ export function MealSection({ meals, onAddMeal, onDeleteMeal, onViewMealDetail }
                               {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                             </button>
                           )}
-                          <button
-                            onClick={() => onDeleteMeal(item.id)}
-                            className="btn-icon"
-                            style={{ width: '28px', height: '28px', color: '#fb7185' }}
-                            title="Delete entry"
-                          >
-                            <Trash2 size={13} />
-                          </button>
                         </div>
                       </div>
 
@@ -215,6 +217,17 @@ export function MealSection({ meals, onAddMeal, onDeleteMeal, onViewMealDetail }
                               <span>{item.coachInsight}</span>
                             </div>
                           )}
+
+                          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
+                            <button
+                              onClick={() => onDeleteMeal(item.id)}
+                              className="btn-secondary"
+                              style={{ padding: '6px 12px', fontSize: '12px', color: '#fb7185', borderColor: 'rgba(251, 113, 133, 0.3)' }}
+                            >
+                              <Trash2 size={14} style={{ marginRight: '6px' }} />
+                              Delete Meal
+                            </button>
+                          </div>
                         </div>
                       )}
                     </div>

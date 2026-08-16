@@ -1,9 +1,12 @@
-import React, { useState } from 'react';
-import { Search, Plus, X, Flame, Dumbbell, Wheat, Droplet, Check } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Search, Plus, X, Flame, Dumbbell, Wheat, Droplet, Check, Heart, Trash2 } from 'lucide-react';
 import { FOOD_DATABASE, searchFoods } from '../../services/nutritionDb';
+import { useNutrition } from '../../context/NutritionContext';
 
 export function ManualAddModal({ isOpen, onClose, onAddFood, defaultMealType = 'lunch' }) {
-  const [activeTab, setActiveTab] = useState('search'); // 'search' or 'custom'
+  const [activeTab, setActiveTab] = useState('search'); // 'search', 'custom', 'saved'
+  const { savedFoods, removeSavedFood, getRecentMeals } = useNutrition();
+  const recentMeals = useMemo(() => getRecentMeals(), [getRecentMeals]);
   const [searchQuery, setSearchQuery] = useState('');
   const [mealType, setMealType] = useState(defaultMealType);
 
@@ -115,12 +118,18 @@ export function ManualAddModal({ isOpen, onClose, onAddFood, defaultMealType = '
             >
               ✍️ Custom Quick Add
             </button>
+            <button
+              className={`segmented-btn ${activeTab === 'saved' ? 'active' : ''}`}
+              onClick={() => setActiveTab('saved')}
+            >
+              <Heart size={14} style={{ display: 'inline', marginBottom: '-2px' }}/> My Foods
+            </button>
           </div>
         </div>
 
         {/* Content */}
         <div className="sheet-content" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-          {activeTab === 'search' ? (
+          {activeTab === 'search' && (
             <>
               {/* Search Bar */}
               <div style={{ position: 'relative' }}>
@@ -183,7 +192,9 @@ export function ManualAddModal({ isOpen, onClose, onAddFood, defaultMealType = '
                 ))}
               </div>
             </>
-          ) : (
+          )}
+
+          {activeTab === 'custom' && (
             <form onSubmit={handleCreateCustom} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div>
                 <label style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 600 }}>
@@ -275,6 +286,105 @@ export function ManualAddModal({ isOpen, onClose, onAddFood, defaultMealType = '
                 <Check size={16} /> Add to Diary
               </button>
             </form>
+          )}
+
+          {activeTab === 'saved' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', overflowY: 'auto', paddingBottom: '20px' }}>
+              {/* Recent Meals */}
+              <div>
+                <h4 style={{ color: '#fff', fontSize: '14px', marginBottom: '10px' }}>Recent Meals</h4>
+                {recentMeals.length === 0 ? (
+                  <div style={{ color: 'var(--text-muted)', fontSize: '13px', padding: '10px' }}>No recent meals found.</div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {recentMeals.map(food => (
+                      <div key={food.id} className="glass-card-interactive" style={{
+                        background: 'var(--bg-surface-elevated)', borderRadius: 'var(--radius-md)', padding: '12px 14px',
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '1px solid var(--border-subtle)'
+                      }}>
+                        <div>
+                          <div style={{ fontWeight: 700, fontSize: '13.5px', color: '#fff' }}>{food.name}</div>
+                          <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                            {food.calories} kcal
+                          </div>
+                        </div>
+                        <div style={{
+                          width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(16, 185, 129, 0.15)',
+                          color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
+                        }} onClick={() => {
+                          onAddFood({
+                            name: food.name,
+                            mealType,
+                            calories: food.calories || 0,
+                            protein: food.protein || 0,
+                            carbs: food.carbs || 0,
+                            fat: food.fat || 0,
+                            fiber: food.fiber || 0,
+                            timestamp: Date.now(),
+                            tags: food.tags || [],
+                            items: food.items || []
+                          });
+                          onClose();
+                        }}>
+                          <Plus size={15} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Saved Foods */}
+              <div>
+                <h4 style={{ color: '#fff', fontSize: '14px', marginBottom: '10px' }}>Saved Foods</h4>
+                {savedFoods.length === 0 ? (
+                  <div style={{ color: 'var(--text-muted)', fontSize: '13px', padding: '10px' }}>No saved foods yet.</div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {savedFoods.map(food => (
+                      <div key={food.id} className="glass-card-interactive" style={{
+                        background: 'var(--bg-surface-elevated)', borderRadius: 'var(--radius-md)', padding: '12px 14px',
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between', border: '1px solid var(--border-subtle)'
+                      }}>
+                        <div>
+                          <div style={{ fontWeight: 700, fontSize: '13.5px', color: '#fff' }}>{food.name}</div>
+                          <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                            {food.calories} kcal • P:{food.protein}g C:{food.carbs}g F:{food.fat}g
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <button onClick={() => removeSavedFood(food.id)} className="btn-icon" style={{
+                            width: '28px', height: '28px', color: 'var(--text-muted)'
+                          }}>
+                            <Trash2 size={15} />
+                          </button>
+                          <div style={{
+                            width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(16, 185, 129, 0.15)',
+                            color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
+                          }} onClick={() => {
+                            onAddFood({
+                              name: food.name,
+                              mealType,
+                              calories: food.calories || 0,
+                              protein: food.protein || 0,
+                              carbs: food.carbs || 0,
+                              fat: food.fat || 0,
+                              fiber: food.fiber || 0,
+                              timestamp: Date.now(),
+                              tags: food.tags || [],
+                              items: food.items || []
+                            });
+                            onClose();
+                          }}>
+                            <Plus size={15} />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
           )}
         </div>
       </div>

@@ -17,6 +17,7 @@ import { ProfileModal } from './components/Profile/ProfileModal';
 import { ApiKeyModal } from './components/Profile/ApiKeyModal';
 import { MobileInstallModal } from './components/Navigation/MobileInstallModal';
 import { WelcomeOnboardingModal } from './components/Onboarding/WelcomeOnboardingModal';
+import { EditMealModal } from './components/Dashboard/EditMealModal';
 import { analyzeFoodWithGemini } from './services/geminiVision';
 import { analyzeFoodOffline } from './services/smartFallbackAI';
 
@@ -30,6 +31,8 @@ function MainApp() {
     getDaySummary,
     addMeal,
     deleteMeal,
+    updateMeal,
+    saveFoodItem,
     apiKey
   } = useNutrition();
 
@@ -51,6 +54,8 @@ function MainApp() {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isApiKeyOpen, setIsApiKeyOpen] = useState(false);
   const [isInstallOpen, setIsInstallOpen] = useState(false);
+
+  const [editingMeal, setEditingMeal] = useState(null);
 
   const summary = getDaySummary(selectedDate);
 
@@ -111,6 +116,17 @@ function MainApp() {
     addMeal(selectedDate, mealData);
   };
 
+  const handleEditMeal = (mealId, meal) => {
+    setEditingMeal({ mealId, meal, dateKey: selectedDate });
+  };
+
+  const handleSaveEditedMeal = (updatedMeal) => {
+    if (editingMeal) {
+      updateMeal(editingMeal.dateKey, editingMeal.mealId, updatedMeal);
+      setEditingMeal(null);
+    }
+  };
+
   return (
     <div className="app-viewport-wrapper">
       <div className="mobile-device-shell">
@@ -142,6 +158,7 @@ function MainApp() {
                 meals={summary.meals}
                 onAddMeal={handleOpenManualAdd}
                 onDeleteMeal={(mealId) => deleteMeal(selectedDate, mealId)}
+                onEditMeal={handleEditMeal}
               />
             </div>
           )}
@@ -234,6 +251,7 @@ function MainApp() {
           onClose={() => setIsResultOpen(false)}
           onConfirmLog={handleConfirmLog}
           defaultMealType={manualMealType}
+          onSaveFood={saveFoodItem}
         />
 
         {/* Manual Food Add Modal */}
@@ -266,6 +284,15 @@ function MainApp() {
         <WelcomeOnboardingModal
           isOpen={isOnboardingOpen}
           onClose={() => setIsOnboardingOpen(false)}
+        />
+
+        {/* Edit Meal Modal */}
+        <EditMealModal
+          isOpen={!!editingMeal}
+          onClose={() => setEditingMeal(null)}
+          meal={editingMeal?.meal}
+          onSave={handleSaveEditedMeal}
+          onSaveFood={saveFoodItem}
         />
       </div>
     </div>

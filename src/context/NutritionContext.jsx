@@ -168,6 +168,11 @@ export function NutritionProvider({ children }) {
     return saved ? JSON.parse(saved) : { isFasting: true, startTime: Date.now() - 1000 * 60 * 60 * 14, targetHours: 16 };
   });
 
+  const [savedFoods, setSavedFoods] = useState(() => {
+    const saved = localStorage.getItem('nutrivision_saved_foods');
+    return saved ? JSON.parse(saved) : [];
+  });
+
   // Sync to local storage
   useEffect(() => {
     localStorage.setItem('nutrivision_profile', JSON.stringify(profile));
@@ -192,6 +197,10 @@ export function NutritionProvider({ children }) {
   useEffect(() => {
     localStorage.setItem('nutrivision_fasting', JSON.stringify(fastingState));
   }, [fastingState]);
+
+  useEffect(() => {
+    localStorage.setItem('nutrivision_saved_foods', JSON.stringify(savedFoods));
+  }, [savedFoods]);
 
   // Derived Daily Targets based on Profile & Goals
   const targets = React.useMemo(() => {
@@ -330,12 +339,55 @@ export function NutritionProvider({ children }) {
     });
   };
 
+  const saveFoodItem = (foodData) => {
+    setSavedFoods(prev => {
+      if (prev.some(f => f.name.toLowerCase() === foodData.name.toLowerCase())) {
+        return prev;
+      }
+      const newFood = {
+        id: 'saved_' + Date.now(),
+        name: foodData.name,
+        calories: foodData.calories || 0,
+        protein: foodData.protein || 0,
+        carbs: foodData.carbs || 0,
+        fat: foodData.fat || 0,
+        fiber: foodData.fiber || 0,
+        items: foodData.items || [],
+        imageUrl: foodData.imageUrl || null,
+        savedAt: Date.now()
+      };
+      return [...prev, newFood];
+    });
+  };
+
+  const removeSavedFood = (id) => {
+    setSavedFoods(prev => prev.filter(f => f.id !== id));
+  };
+
+  const getRecentMeals = (days = 3) => {
+    const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+    const flatMeals = Object.values(meals).flat().filter(m => m.timestamp >= cutoff);
+    const unique = [];
+    const seen = new Set();
+    flatMeals.sort((a, b) => b.timestamp - a.timestamp);
+    
+    for (const m of flatMeals) {
+      const nameKey = (m.name || '').toLowerCase();
+      if (!seen.has(nameKey)) {
+        seen.add(nameKey);
+        unique.push(m);
+      }
+    }
+    return unique;
+  };
+
   const exportDataJSON = () => {
     const data = {
       profile,
       meals,
       waterLogs,
       weightLogs,
+      savedFoods,
       exportedAt: new Date().toISOString()
     };
     return JSON.stringify(data, null, 2);
@@ -348,6 +400,7 @@ export function NutritionProvider({ children }) {
       if (parsed.meals) setMeals(parsed.meals);
       if (parsed.waterLogs) setWaterLogs(parsed.waterLogs);
       if (parsed.weightLogs) setWeightLogs(parsed.weightLogs);
+      if (parsed.savedFoods) setSavedFoods(parsed.savedFoods);
       return { success: true };
     } catch (e) {
       return { success: false, error: e.message };
@@ -379,7 +432,11 @@ export function NutritionProvider({ children }) {
         deleteWeight,
         updateProfile,
         exportDataJSON,
-        importDataJSON
+        importDataJSON,
+        savedFoods,
+        saveFoodItem,
+        removeSavedFood,
+        getRecentMeals
       }}
     >
       {children}

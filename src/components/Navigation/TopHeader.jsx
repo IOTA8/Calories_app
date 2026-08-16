@@ -21,7 +21,7 @@ export function TopHeader({ onOpenProfile, onOpenApiKey, onOpenInstall }) {
   const isToday = selectedDate === formatDateKey(new Date());
 
   const getGoalBadge = () => {
-    const goal = targets.goalConfig;
+    const goal = targets?.goalConfig;
     if (!goal) return { text: 'Tracker', class: 'badge-emerald' };
     if (goal.category === 'loss') return { text: `${goal.label} (${goal.deficitKcal} kcal)`, class: 'badge-emerald' };
     if (goal.category === 'gain') return { text: `${goal.label} (+${goal.deficitKcal} kcal)`, class: 'badge-amber' };
@@ -30,13 +30,14 @@ export function TopHeader({ onOpenProfile, onOpenApiKey, onOpenInstall }) {
   };
 
   const goalBadge = getGoalBadge();
+  const calorieTarget = targets?.targetCalories ? Math.round(targets.targetCalories) : null;
 
   return (
     <header style={{
-      padding: '16px 16px 12px 16px',
+      padding: '14px 16px 10px 16px',
       display: 'flex',
       flexDirection: 'column',
-      gap: '12px',
+      gap: '10px',
       background: 'rgba(9, 13, 22, 0.95)',
       borderBottom: '1px solid var(--border-subtle)',
       flexShrink: 0,
@@ -84,22 +85,22 @@ export function TopHeader({ onOpenProfile, onOpenApiKey, onOpenInstall }) {
           <button
             onClick={onOpenInstall}
             title="Install app to iOS / Android"
+            aria-label="Install app to iOS / Android"
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-              padding: '6px 9px',
-              borderRadius: '99px',
+              width: '32px',
+              height: '32px',
+              borderRadius: '50%',
               border: '1px solid rgba(56, 189, 248, 0.3)',
               background: 'rgba(56, 189, 248, 0.1)',
               color: '#38bdf8',
-              fontSize: '11.5px',
-              fontWeight: 600,
-              cursor: 'pointer'
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              transition: 'all 0.15s ease'
             }}
           >
-            <Smartphone size={13} />
-            <span>Mobile</span>
+            <Smartphone size={15} />
           </button>
 
           <button
@@ -145,7 +146,7 @@ export function TopHeader({ onOpenProfile, onOpenApiKey, onOpenInstall }) {
       </div>
 
       {/* Date Navigation & Goal Pill */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <button
             onClick={handlePrevDay}
@@ -182,8 +183,32 @@ export function TopHeader({ onOpenProfile, onOpenApiKey, onOpenInstall }) {
           </button>
         </div>
 
-        <div className={`badge ${goalBadge.class}`} style={{ fontSize: '11px' }}>
-          {goalBadge.text}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {calorieTarget && (
+            <span
+              title="Daily Calorie Target"
+              style={{
+                fontSize: '11.5px',
+                fontWeight: 700,
+                color: 'var(--text-secondary)',
+                fontFamily: 'var(--font-mono, "JetBrains Mono", monospace)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                background: 'rgba(255, 255, 255, 0.04)',
+                padding: '3px 8px',
+                borderRadius: '6px',
+                border: '1px solid rgba(255, 255, 255, 0.06)'
+              }}
+            >
+              <span>🎯</span>
+              <span>{calorieTarget.toLocaleString()} kcal</span>
+            </span>
+          )}
+
+          <div className={`badge ${goalBadge.class}`} style={{ fontSize: '11px' }}>
+            {goalBadge.text}
+          </div>
         </div>
       </div>
     </header>

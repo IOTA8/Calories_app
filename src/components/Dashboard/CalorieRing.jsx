@@ -71,7 +71,8 @@ export function CalorieRing({ summary, targets }) {
               strokeLinecap="round"
               fill="transparent"
               style={{
-                transition: 'stroke-dashoffset 0.8s cubic-bezier(0.16, 1, 0.3, 1), stroke 0.3s ease'
+                transition: 'stroke-dashoffset 0.6s ease, stroke 0.3s ease',
+                filter: (caloriesPercent >= 85 && caloriesPercent <= 100) ? 'drop-shadow(0 0 8px rgba(16,185,129,0.6))' : 'none'
               }}
             />
           </svg>
@@ -102,8 +103,8 @@ export function CalorieRing({ summary, targets }) {
             
             <div style={{ display: 'flex', alignItems: 'baseline', gap: '3px' }}>
               <span className="font-mono" style={{
-                fontSize: '32px',
-                fontWeight: 800,
+                fontSize: '40px',
+                fontWeight: 900,
                 color: isOverGoal && isLossGoal ? '#fb7185' : '#ffffff',
                 lineHeight: 1.1
               }}>
@@ -126,10 +127,11 @@ export function CalorieRing({ summary, targets }) {
         {/* Side Stats */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: 1, minWidth: '120px' }}>
           <div style={{
-            background: 'var(--bg-surface-elevated)',
+            background: 'linear-gradient(to right, rgba(16,185,129,0.06), transparent)',
             borderRadius: 'var(--radius-md)',
             padding: '10px 12px',
-            border: '1px solid var(--border-subtle)'
+            border: '1px solid var(--border-subtle)',
+            borderLeft: '3px solid #10b981'
           }}>
             <div style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>Eaten Today</div>
             <div className="font-mono" style={{ fontSize: '18px', fontWeight: 700, color: '#10b981', marginTop: '2px' }}>
@@ -138,10 +140,11 @@ export function CalorieRing({ summary, targets }) {
           </div>
 
           <div style={{
-            background: 'var(--bg-surface-elevated)',
+            background: 'linear-gradient(to right, rgba(16,185,129,0.06), transparent)',
             borderRadius: 'var(--radius-md)',
             padding: '10px 12px',
-            border: '1px solid var(--border-subtle)'
+            border: '1px solid var(--border-subtle)',
+            borderLeft: '3px solid #10b981'
           }}>
             <div style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 600 }}>Target Deficit/Surplus</div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
