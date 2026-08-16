@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Plus, Trash2, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
+import { useNutrition } from '../../context/NutritionContext';
 
 const MEAL_CONFIGS = [
   { type: 'breakfast', label: 'Breakfast', emoji: '🍳' },
@@ -8,11 +9,25 @@ const MEAL_CONFIGS = [
   { type: 'snack', label: 'Snacks', emoji: '🥑' }
 ];
 
-export function MealSection({ meals, onAddMeal, onDeleteMeal, onEditMeal }) {
+export function MealSection({ meals: propMeals, onAddMeal, onDeleteMeal, onEditMeal }) {
+  const { selectedDate, getDaySummary, deleteMeal } = useNutrition();
+  const summary = getDaySummary(selectedDate);
+  const meals = propMeals || summary.meals || [];
   const [expandedMealIds, setExpandedMealIds] = useState({});
 
   const toggleMealExpand = (mealId) => {
     setExpandedMealIds(prev => ({ ...prev, [mealId]: !prev[mealId] }));
+  };
+
+  const handleDeleteItem = (item, e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    deleteMeal(selectedDate, item?.id, item);
+    if (onDeleteMeal) {
+      onDeleteMeal(item?.id || item, item);
+    }
   };
 
   return (
@@ -198,23 +213,19 @@ export function MealSection({ meals, onAddMeal, onDeleteMeal, onEditMeal }) {
 
                           <button
                             type="button"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              onDeleteMeal(item.id || item, item, index);
-                            }}
+                            onClick={(e) => handleDeleteItem(item, e)}
                             className="btn-icon"
                             style={{
-                              width: '30px',
-                              height: '30px',
-                              background: 'rgba(244, 63, 94, 0.15)',
-                              border: '1px solid rgba(244, 63, 94, 0.3)',
+                              width: '32px',
+                              height: '32px',
+                              background: 'rgba(244, 63, 94, 0.18)',
+                              border: '1px solid rgba(244, 63, 94, 0.35)',
                               color: '#fb7185',
                               cursor: 'pointer'
                             }}
                             title="Delete from diary"
                           >
-                            <Trash2 size={15} />
+                            <Trash2 size={16} />
                           </button>
                         </div>
                       </div>
@@ -257,23 +268,19 @@ export function MealSection({ meals, onAddMeal, onDeleteMeal, onEditMeal }) {
                           <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
                             <button
                               type="button"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                onDeleteMeal(item.id || item, item, index);
-                              }}
+                              onClick={(e) => handleDeleteItem(item, e)}
                               style={{
-                                background: 'rgba(244, 63, 94, 0.12)',
-                                border: '1px solid rgba(244, 63, 94, 0.3)',
+                                background: 'rgba(244, 63, 94, 0.15)',
+                                border: '1px solid rgba(244, 63, 94, 0.35)',
                                 borderRadius: '6px',
-                                padding: '4px 8px',
+                                padding: '5px 10px',
                                 color: '#fb7185',
                                 fontSize: '11.5px',
-                                fontWeight: 600,
+                                fontWeight: 700,
                                 cursor: 'pointer',
                                 display: 'flex',
                                 alignItems: 'center',
-                                gap: '4px'
+                                gap: '5px'
                               }}
                             >
                               <Trash2 size={13} /> Delete Meal

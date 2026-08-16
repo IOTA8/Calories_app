@@ -292,57 +292,65 @@ export function NutritionProvider({ children }) {
     });
   };
 
-  const deleteMeal = (dateKey, mealIdOrItem, indexFallback) => {
+  const deleteMeal = (dateKey, mealId, itemRef) => {
     setMeals(prev => {
-      const currentList = prev[dateKey] || [];
-      if (!currentList || currentList.length === 0) return prev;
+      const nextState = { ...prev };
+      const targetDate = dateKey || selectedDate;
 
-      const idToMatch = typeof mealIdOrItem === 'object' && mealIdOrItem !== null
-        ? mealIdOrItem.id
-        : mealIdOrItem;
+      // Search target date first, then fallback to any other date in case of timezone/dateKey mismatch
+      const datesToSearch = nextState[targetDate]
+        ? [targetDate, ...Object.keys(nextState).filter(k => k !== targetDate)]
+        : Object.keys(nextState);
 
-      let updated = currentList;
+      for (const d of datesToSearch) {
+        const list = nextState[d];
+        if (!Array.isArray(list) || list.length === 0) continue;
 
-      if (idToMatch !== undefined && idToMatch !== null && idToMatch !== '') {
-        const idStr = String(idToMatch);
-        updated = currentList.filter(m => String(m.id) !== idStr);
-      }
+        const initialCount = list.length;
 
-      // If nothing was deleted (e.g. legacy items with missing IDs or reference mismatch):
-      if (updated.length === currentList.length) {
-        if (typeof mealIdOrItem === 'object' && mealIdOrItem !== null) {
-          let removed = false;
-          updated = currentList.filter(m => {
-            if (removed) return true;
-            if (m === mealIdOrItem) {
-              removed = true;
-              return false;
-            }
-            if (m.name === mealIdOrItem.name && m.calories === mealIdOrItem.calories && m.mealType === mealIdOrItem.mealType) {
-              removed = true;
-              return false;
-            }
-            return true;
-          });
-        } else if (typeof indexFallback === 'number') {
-          updated = currentList.filter((_, idx) => idx !== indexFallback);
-        } else if (typeof mealIdOrItem === 'string') {
-          let removed = false;
-          updated = currentList.filter(m => {
-            if (removed) return true;
-            if (m.name === mealIdOrItem || String(m.id) === mealIdOrItem) {
-              removed = true;
-              return false;
-            }
-            return true;
-          });
+        // Strategy 1: Match by unique ID
+        let filtered = list.filter(m => {
+          if (mealId && m.id && String(m.id) === String(mealId)) return false;
+          if (itemRef?.id && m.id && String(m.id) === String(itemRef.id)) return false;
+          return true;
+        });
+
+        // Strategy 2: Match by exact object reference
+        if (filtered.length === initialCount && itemRef) {
+          filtered = list.filter(m => m !== itemRef);
+        }
+
+        // Strategy 3: Match by name + calories + mealType
+        if (filtered.length === initialCount) {
+          const targetName = itemRef?.name || (typeof mealId === 'string' ? mealId : null);
+          const targetCalories = itemRef?.calories;
+          const targetMealType = itemRef?.mealType;
+
+          if (targetName) {
+            let removedOne = false;
+            filtered = list.filter(m => {
+              if (removedOne) return true;
+
+              const nameMatches = (m.name || '').trim().toLowerCase() === targetName.trim().toLowerCase();
+              const caloriesMatch = targetCalories !== undefined ? m.calories === targetCalories : true;
+              const typeMatch = targetMealType ? m.mealType === targetMealType : true;
+
+              if (nameMatches && caloriesMatch && typeMatch) {
+                removedOne = true;
+                return false;
+              }
+              return true;
+            });
+          }
+        }
+
+        if (filtered.length < initialCount) {
+          nextState[d] = filtered;
+          break; // successfully deleted!
         }
       }
 
-      return {
-        ...prev,
-        [dateKey]: updated
-      };
+      return nextState;
     });
   };
 
@@ -374,57 +382,94 @@ export function NutritionProvider({ children }) {
   const addWorkout = (dateKey, workoutData) => {
     const newWorkout = {
       ...workoutData,
-      id: 'workout_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
-      title: workoutData.title || 'Workout',
-      type: workoutData.type || 'Strength Training',
-      durationMin: parseInt(workoutData.durationMin, 10) || 30,
-      caloriesBurned: parseInt(workoutData.caloriesBurned, 10) || 200,
+      id: 'wo_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
       timestamp: Date.now()
     };
+
     setWorkouts(prev => {
-      const list = prev[dateKey] || [];
-      return { ...prev, [dateKey]: [...list, newWorkout] };
+      const currentList = prev[dateKey] || [];
+      return {
+        ...prev,
+        [dateKey]: [...currentList, newWorkout]
+      };
     });
     return newWorkout;
   };
 
-  const deleteWorkout = (dateKey, workoutId) => {
+  const deleteWorkout = (dateKey, workoutId, workoutRef) => {
     setWorkouts(prev => {
-      const list = prev[dateKey] || [];
-      return { ...prev, [dateKey]: list.filter(w => w.id !== workoutId) };
+      const nextWorkouts = { ...prev };
+      const targetDate = dateKey || selectedDate;
+      const datesToSearch = nextWorkouts[targetDate]
+        ? [targetDate, ...Object.keys(nextWorkouts).filter(k => k !== targetDate)]
+        : Object.keys(nextWorkouts);
+
+      for (const d of datesToSearch) {
+        const list = nextWorkouts[d];
+        if (!Array.isArray(list) || list.length === 0) continue;
+
+        const initialCount = list.length;
+        let filtered = list.filter(w => {
+          if (workoutId && String(w.id) === String(workoutId)) return false;
+          if (workoutRef?.id && String(w.id) === String(workoutRef.id)) return false;
+          if (workoutRef && w === workoutRef) return false;
+          return true;
+        });
+
+        if (filtered.length === initialCount && workoutRef) {
+          let removedOne = false;
+          filtered = list.filter(w => {
+            if (removedOne) return true;
+            if (w.title === workoutRef.title && w.caloriesBurned === workoutRef.caloriesBurned) {
+              removedOne = true;
+              return false;
+            }
+            return true;
+          });
+        }
+
+        if (filtered.length < initialCount) {
+          nextWorkouts[d] = filtered;
+          break;
+        }
+      }
+
+      return nextWorkouts;
     });
   };
 
   const updateWorkout = (dateKey, workoutId, updatedData) => {
     setWorkouts(prev => {
-      const list = prev[dateKey] || [];
+      const currentList = prev[dateKey] || [];
       return {
         ...prev,
-        [dateKey]: list.map(w => w.id === workoutId ? { ...w, ...updatedData } : w)
+        [dateKey]: currentList.map(w => String(w.id) === String(workoutId) ? { ...w, ...updatedData } : w)
       };
     });
   };
 
-  const logWeight = (weight, dateKey = selectedDate, note = '') => {
-    const parsed = parseFloat(weight);
-    if (!parsed) return;
-
+  const logWeight = (weightKg, dateKey = selectedDate, note = '') => {
     setWeightLogs(prev => {
       const filtered = prev.filter(entry => entry.date !== dateKey);
-      const updated = [...filtered, { date: dateKey, weight: parsed, note }];
-      return updated.sort((a, b) => new Date(a.date) - new Date(b.date));
+      const newLogs = [...filtered, { date: dateKey, weight: parseFloat(weightKg), note }];
+      return newLogs.sort((a, b) => new Date(a.date) - new Date(b.date));
     });
-
-    // Also update profile current weight
-    setProfile(prev => ({ ...prev, weightKg: parsed }));
   };
 
-  const deleteWeight = (dateKey) => {
-    setWeightLogs(prev => prev.filter(entry => entry.date !== dateKey));
+  const deleteWeight = (dateKeyOrEntry) => {
+    const targetDate = typeof dateKeyOrEntry === 'object' ? dateKeyOrEntry?.date : dateKeyOrEntry;
+    setWeightLogs(prev => prev.filter(entry => {
+      if (targetDate && entry.date === targetDate) return false;
+      if (typeof dateKeyOrEntry === 'object' && entry === dateKeyOrEntry) return false;
+      return true;
+    }));
   };
 
-  const updateProfile = (fields) => {
-    setProfile(prev => ({ ...prev, ...fields }));
+  const updateProfile = (newProfile) => {
+    setProfile(prev => ({
+      ...prev,
+      ...newProfile
+    }));
   };
 
   const toggleFasting = (targetHours = 16) => {
@@ -439,11 +484,11 @@ export function NutritionProvider({ children }) {
 
   const saveFoodItem = (foodData) => {
     setSavedFoods(prev => {
-      if (prev.some(f => (f.name || '').toLowerCase() === (foodData.name || '').toLowerCase())) {
-        return prev;
-      }
-      const newFood = {
-        id: 'saved_' + Date.now(),
+      const exists = prev.some(f => f.name.toLowerCase() === foodData.name.toLowerCase());
+      if (exists) return prev;
+
+      const newItem = {
+        id: 'saved_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5),
         name: foodData.name,
         calories: foodData.calories || 0,
         protein: foodData.protein || 0,
@@ -454,12 +499,18 @@ export function NutritionProvider({ children }) {
         imageUrl: foodData.imageUrl || null,
         savedAt: Date.now()
       };
-      return [...prev, newFood];
+      return [...prev, newItem];
     });
   };
 
   const removeSavedFood = (idOrName) => {
-    setSavedFoods(prev => prev.filter(f => f.id !== idOrName && (f.name || '').toLowerCase() !== (idOrName || '').toLowerCase()));
+    if (!idOrName) return;
+    const targetStr = String(idOrName).toLowerCase();
+    setSavedFoods(prev => prev.filter(f => {
+      if (f.id && String(f.id).toLowerCase() === targetStr) return false;
+      if (f.name && f.name.toLowerCase() === targetStr) return false;
+      return true;
+    }));
   };
 
   const toggleSaveFood = (foodData) => {
