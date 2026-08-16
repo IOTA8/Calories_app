@@ -166,8 +166,8 @@ export function MealSection({ meals, onAddMeal, onDeleteMeal, onEditMeal }) {
                           </div>
                         </div>
 
-                        {/* Right: Calories */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        {/* Right: Calories & Actions */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <span className="font-mono" style={{ fontSize: '13.5px', fontWeight: 800, color: '#ffffff' }}>
                             {item.calories} <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>kcal</span>
                           </span>
@@ -179,12 +179,31 @@ export function MealSection({ meals, onAddMeal, onDeleteMeal, onEditMeal }) {
                                 toggleMealExpand(item.id);
                               }}
                               className="btn-icon"
-                              style={{ width: '24px', height: '24px', background: 'transparent', border: 'none' }}
+                              style={{ width: '26px', height: '26px', background: 'transparent', border: 'none', color: 'var(--text-secondary)' }}
                               title="Toggle Breakdown"
                             >
                               {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                             </button>
                           )}
+
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onDeleteMeal(item.id);
+                            }}
+                            className="btn-icon"
+                            style={{
+                              width: '26px',
+                              height: '26px',
+                              background: 'transparent',
+                              border: 'none',
+                              color: '#fb7185',
+                              opacity: 0.8
+                            }}
+                            title="Delete from diary"
+                          >
+                            <Trash2 size={14} />
+                          </button>
                         </div>
                       </div>
 

@@ -341,7 +341,7 @@ export function NutritionProvider({ children }) {
 
   const saveFoodItem = (foodData) => {
     setSavedFoods(prev => {
-      if (prev.some(f => f.name.toLowerCase() === foodData.name.toLowerCase())) {
+      if (prev.some(f => (f.name || '').toLowerCase() === (foodData.name || '').toLowerCase())) {
         return prev;
       }
       const newFood = {
@@ -360,8 +360,27 @@ export function NutritionProvider({ children }) {
     });
   };
 
-  const removeSavedFood = (id) => {
-    setSavedFoods(prev => prev.filter(f => f.id !== id));
+  const removeSavedFood = (idOrName) => {
+    setSavedFoods(prev => prev.filter(f => f.id !== idOrName && (f.name || '').toLowerCase() !== (idOrName || '').toLowerCase()));
+  };
+
+  const toggleSaveFood = (foodData) => {
+    if (!foodData || !foodData.name) return false;
+    const nameLower = foodData.name.toLowerCase();
+    const alreadySaved = savedFoods.some(f => (f.name || '').toLowerCase() === nameLower);
+    
+    if (alreadySaved) {
+      removeSavedFood(foodData.id || foodData.name);
+      return false;
+    } else {
+      saveFoodItem(foodData);
+      return true;
+    }
+  };
+
+  const isFoodSaved = (name) => {
+    if (!name) return false;
+    return savedFoods.some(f => (f.name || '').toLowerCase() === name.toLowerCase());
   };
 
   const getRecentMeals = (days = 3) => {
@@ -436,6 +455,8 @@ export function NutritionProvider({ children }) {
         savedFoods,
         saveFoodItem,
         removeSavedFood,
+        toggleSaveFood,
+        isFoodSaved,
         getRecentMeals
       }}
     >

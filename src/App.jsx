@@ -294,7 +294,12 @@ function MainApp() {
           onClose={() => setEditingMeal(null)}
           meal={editingMeal?.meal}
           onSave={handleSaveEditedMeal}
-          onSaveFood={saveFoodItem}
+          onDelete={(mealId) => {
+            if (editingMeal) {
+              deleteMeal(editingMeal.dateKey, mealId);
+              setEditingMeal(null);
+            }
+          }}
         />
       </div>
     </div>

@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Sparkles, Check, X, Plus, Minus, Flame, Dumbbell, Wheat, Droplet, Bookmark } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { useNutrition } from '../../context/NutritionContext';
 
-export function ScanResultModal({ isOpen, result, onClose, onConfirmLog, onSaveFood, defaultMealType = 'lunch' }) {
+export function ScanResultModal({ isOpen, result, onClose, onConfirmLog, defaultMealType = 'lunch' }) {
   if (!isOpen || !result) return null;
+
+  const { isFoodSaved, toggleSaveFood } = useNutrition();
 
   const [mealName, setMealName] = useState(result.mealName || 'Scanned Meal');
   const [mealType, setMealType] = useState(defaultMealType);
@@ -12,8 +15,6 @@ export function ScanResultModal({ isOpen, result, onClose, onConfirmLog, onSaveF
   const [manualOverrides, setManualOverrides] = useState({ calories: null, protein: null, carbs: null, fat: null });
   const [editingMacro, setEditingMacro] = useState(null); // 'calories', 'protein', 'carbs', 'fat'
   const [editMacroValue, setEditMacroValue] = useState('');
-  
-  const [saveSuccess, setSaveSuccess] = useState(false);
 
   useEffect(() => {
     if (result) {
@@ -133,21 +134,19 @@ export function ScanResultModal({ isOpen, result, onClose, onConfirmLog, onSaveF
     });
   };
 
-  const handleSaveFood = () => {
-    if (onSaveFood) {
-      onSaveFood({
-        name: mealName,
-        mealType,
-        calories: displayCalories,
-        protein: displayProtein,
-        carbs: displayCarbs,
-        fat: displayFat,
-        fiber: totalFiber,
-        items: items
-      });
-      setSaveSuccess(true);
-      setTimeout(() => setSaveSuccess(false), 1000);
-    }
+  const isSaved = isFoodSaved(mealName);
+
+  const handleToggleSave = () => {
+    toggleSaveFood({
+      name: mealName,
+      mealType,
+      calories: displayCalories,
+      protein: displayProtein,
+      carbs: displayCarbs,
+      fat: displayFat,
+      fiber: totalFiber,
+      items: items
+    });
   };
 
   const handleMacroCardClick = (macro, currentValue) => {
@@ -217,8 +216,18 @@ export function ScanResultModal({ isOpen, result, onClose, onConfirmLog, onSaveF
             <span style={{ fontWeight: 800, fontSize: '16px', color: '#fff' }}>AI Nutrition Breakdown</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <button onClick={handleSaveFood} className="btn-icon" style={{ width: '32px', height: '32px' }} title="Save to My Foods">
-              <Bookmark size={16} fill={saveSuccess ? '#fbbf24' : 'none'} color={saveSuccess ? '#fbbf24' : 'currentColor'} />
+            <button
+              onClick={handleToggleSave}
+              className="btn-icon"
+              style={{
+                width: '32px',
+                height: '32px',
+                background: isSaved ? 'rgba(251, 191, 36, 0.15)' : 'rgba(255, 255, 255, 0.05)',
+                borderColor: isSaved ? 'rgba(251, 191, 36, 0.4)' : 'var(--border-subtle)'
+              }}
+              title={isSaved ? "Saved in My Foods (Click to remove)" : "Save to My Foods"}
+            >
+              <Bookmark size={16} fill={isSaved ? '#fbbf24' : 'none'} color={isSaved ? '#fbbf24' : 'var(--text-secondary)'} />
             </button>
             <button onClick={onClose} className="btn-icon" style={{ width: '32px', height: '32px' }}>
               <X size={16} />
