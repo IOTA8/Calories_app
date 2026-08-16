@@ -271,6 +271,10 @@ html, body {
   transition: background 0.15s ease, transform 0.15s ease;
 }
 
+.btn-icon svg {
+  pointer-events: none;
+}
+
 .btn-icon:active {
   transform: scale(0.92);
   background: rgba(255, 255, 255, 0.12);

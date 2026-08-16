@@ -50,10 +50,10 @@ export function EditMealModal({ isOpen, onClose, meal, onSave, onDelete }) {
   };
 
   const handleDelete = () => {
-    if (onDelete && editedMeal.id) {
-      onDelete(editedMeal.id);
-      onClose();
+    if (onDelete) {
+      onDelete(editedMeal.id || editedMeal, editedMeal);
     }
+    onClose();
   };
 
   const updateMacro = (macro, value) => {

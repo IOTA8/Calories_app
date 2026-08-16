@@ -292,13 +292,56 @@ export function NutritionProvider({ children }) {
     });
   };
 
-  const deleteMeal = (dateKey, mealId) => {
-    if (!mealId) return;
+  const deleteMeal = (dateKey, mealIdOrItem, indexFallback) => {
     setMeals(prev => {
       const currentList = prev[dateKey] || [];
+      if (!currentList || currentList.length === 0) return prev;
+
+      const idToMatch = typeof mealIdOrItem === 'object' && mealIdOrItem !== null
+        ? mealIdOrItem.id
+        : mealIdOrItem;
+
+      let updated = currentList;
+
+      if (idToMatch !== undefined && idToMatch !== null && idToMatch !== '') {
+        const idStr = String(idToMatch);
+        updated = currentList.filter(m => String(m.id) !== idStr);
+      }
+
+      // If nothing was deleted (e.g. legacy items with missing IDs or reference mismatch):
+      if (updated.length === currentList.length) {
+        if (typeof mealIdOrItem === 'object' && mealIdOrItem !== null) {
+          let removed = false;
+          updated = currentList.filter(m => {
+            if (removed) return true;
+            if (m === mealIdOrItem) {
+              removed = true;
+              return false;
+            }
+            if (m.name === mealIdOrItem.name && m.calories === mealIdOrItem.calories && m.mealType === mealIdOrItem.mealType) {
+              removed = true;
+              return false;
+            }
+            return true;
+          });
+        } else if (typeof indexFallback === 'number') {
+          updated = currentList.filter((_, idx) => idx !== indexFallback);
+        } else if (typeof mealIdOrItem === 'string') {
+          let removed = false;
+          updated = currentList.filter(m => {
+            if (removed) return true;
+            if (m.name === mealIdOrItem || String(m.id) === mealIdOrItem) {
+              removed = true;
+              return false;
+            }
+            return true;
+          });
+        }
+      }
+
       return {
         ...prev,
-        [dateKey]: currentList.filter(m => String(m.id) !== String(mealId))
+        [dateKey]: updated
       };
     });
   };

@@ -198,18 +198,23 @@ export function MealSection({ meals, onAddMeal, onDeleteMeal, onEditMeal }) {
 
                           <button
                             type="button"
-                            onClick={() => onDeleteMeal(item.id)}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              onDeleteMeal(item.id || item, item, index);
+                            }}
                             className="btn-icon"
                             style={{
-                              width: '28px',
-                              height: '28px',
-                              background: 'rgba(244, 63, 94, 0.1)',
-                              border: '1px solid rgba(244, 63, 94, 0.25)',
-                              color: '#fb7185'
+                              width: '30px',
+                              height: '30px',
+                              background: 'rgba(244, 63, 94, 0.15)',
+                              border: '1px solid rgba(244, 63, 94, 0.3)',
+                              color: '#fb7185',
+                              cursor: 'pointer'
                             }}
                             title="Delete from diary"
                           >
-                            <Trash2 size={14} />
+                            <Trash2 size={15} />
                           </button>
                         </div>
                       </div>
@@ -251,13 +256,17 @@ export function MealSection({ meals, onAddMeal, onDeleteMeal, onEditMeal }) {
 
                           <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }}>
                             <button
+                              type="button"
                               onClick={(e) => {
+                                e.preventDefault();
                                 e.stopPropagation();
-                                onDeleteMeal(item.id);
+                                onDeleteMeal(item.id || item, item, index);
                               }}
                               style={{
-                                background: 'none',
-                                border: 'none',
+                                background: 'rgba(244, 63, 94, 0.12)',
+                                border: '1px solid rgba(244, 63, 94, 0.3)',
+                                borderRadius: '6px',
+                                padding: '4px 8px',
                                 color: '#fb7185',
                                 fontSize: '11.5px',
                                 fontWeight: 600,
@@ -267,7 +276,7 @@ export function MealSection({ meals, onAddMeal, onDeleteMeal, onEditMeal }) {
                                 gap: '4px'
                               }}
                             >
-                              <Trash2 size={13} /> Delete
+                              <Trash2 size={13} /> Delete Meal
                             </button>
                           </div>
                         </div>
